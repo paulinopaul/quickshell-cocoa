@@ -1,0 +1,5 @@
+module Cocoa.Components
+Capsule 1.0 Capsule.qml
+Icon 1.0 Icon.qml
+IconButton 1.0 IconButton.qml
+Meter 1.0 Meter.qml

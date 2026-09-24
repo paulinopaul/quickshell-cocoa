@@ -1,0 +1,4 @@
+module Cocoa.Theme
+singleton Colors 1.0 Colors.qml
+singleton Metrics 1.0 Metrics.qml
+singleton Typography 1.0 Typography.qml

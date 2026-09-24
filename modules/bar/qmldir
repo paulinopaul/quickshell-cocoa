@@ -1,0 +1,6 @@
+module Cocoa.Modules.Bar
+BarWindow 1.0 BarWindow.qml
+LeftPanel 1.0 LeftPanel.qml
+CenterCapsule 1.0 CenterCapsule.qml
+RightPanel 1.0 RightPanel.qml
+MediaFlyout 1.0 MediaFlyout.qml

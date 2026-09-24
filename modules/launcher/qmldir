@@ -1,0 +1,3 @@
+module Cocoa.Modules.Launcher
+LauncherWindow 1.0 LauncherWindow.qml
+AppItem 1.0 AppItem.qml

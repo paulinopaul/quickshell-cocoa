@@ -1,0 +1,132 @@
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Shapes
+import "../../theme"
+import "../../services"
+import "../../components"
+
+// Panel izquierdo — pentágono:
+// Rectángulo delgado, solo la esquina INFERIOR-DERECHA está recortada diagonalmente.
+// El resto del panel es rectangular.
+//
+//   TL ─────────────────── TR
+//   |                       |
+//   |                        \
+//   BL ─────────────── BR'    (BR' = TR - skew en X, BL en Y)
+//
+//  5 puntos: TL → TR → TR+(0,height-skew) → TR+(−skew,height) → BL
+
+Item {
+    id: root
+
+    signal launcherRequested()
+
+    readonly property int sk:  Metrics.sideTrapSkew   // Magnitud del recorte diagonal
+    readonly property int ph:  Metrics.sideHeight      // Altura del panel
+
+    implicitWidth:  contentRow.implicitWidth + Metrics.innerPadH * 2 + sk
+    implicitHeight: ph
+
+    // Pentágono: rectángulo con esquina inferior-derecha recortada
+    Shape {
+        anchors.fill: parent
+        layer.enabled: true
+        layer.samples: 4
+
+        ShapePath {
+            fillColor:   Colors.surface
+            strokeColor: "transparent"
+            strokeWidth: 0
+
+            startX: 0;        startY: 0
+            PathLine { x: root.width;        y: 0 }
+            PathLine { x: root.width - root.sk; y: root.ph }
+            PathLine { x: 0;                 y: root.ph }
+            PathLine { x: 0;                 y: 0 }
+        }
+    }
+
+    // Contenido
+    RowLayout {
+        id: contentRow
+        anchors.left:            parent.left
+        anchors.leftMargin:      Metrics.innerPadH
+        anchors.verticalCenter:  parent.verticalCenter
+        spacing: Metrics.itemSpacing
+
+        // Indicadores de workspaces
+        Row {
+            spacing: 4
+
+            Repeater {
+                model: HyprlandService.workspaces
+                delegate: Rectangle {
+                    id: wsDot
+                    required property var  modelData
+                    readonly property bool active:  HyprlandService.focusedWorkspaceId === modelData.id
+                    readonly property bool occupied: modelData.toplevels &&
+                                                     modelData.toplevels.values &&
+                                                     modelData.toplevels.values.length > 0
+
+                    width:  active ? 14 : 5
+                    height: 3
+                    radius: 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: active   ? Colors.text :
+                           occupied ? Colors.textMuted : Colors.textDim
+
+                    Behavior on width { NumberAnimation { duration: Metrics.animFast; easing.type: Easing.OutQuad } }
+                    Behavior on color { ColorAnimation  { duration: Metrics.animFast } }
+
+                    MouseArea {
+                        anchors.fill:  parent
+                        cursorShape:   Qt.PointingHandCursor
+                        onClicked:     HyprlandService.focusWorkspace(modelData.id)
+                    }
+                }
+            }
+        }
+
+        // Separador
+        Rectangle {
+            width: 1; height: 10
+            color: Colors.textDim
+            opacity: 0.5
+        }
+
+        // Icono + clase de la app activa (envuelto en Item para que MouseArea pueda usar anchors)
+        Item {
+            implicitWidth:  appRow.implicitWidth
+            implicitHeight: appRow.implicitHeight
+
+            RowLayout {
+                id: appRow
+                anchors.fill: parent
+                spacing: 5
+
+                Icon {
+                    size:  Metrics.iconSizeSmall
+                    name:  HyprlandService.iconForClass(HyprlandService.windowClass)
+                    color: Colors.textMuted
+                }
+
+                Text {
+                    text: {
+                        const c = HyprlandService.windowClass;
+                        return c.length > 14 ? c.substring(0, 12) + "…" : c;
+                    }
+                    color:            Colors.textMuted
+                    font.pixelSize:   Metrics.textSizeNormal
+                    font.family:      Typography.family
+                    font.weight:      Typography.weightNormal
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape:  Qt.PointingHandCursor
+                onClicked:    root.launcherRequested()
+            }
+        }
+    }
+}
