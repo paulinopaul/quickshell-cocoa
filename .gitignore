@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.bak
+.planning/
+/tmp/cocoa_palette_cache/
