@@ -98,6 +98,7 @@ Item {
         Item {
             implicitWidth:  appRow.implicitWidth
             implicitHeight: appRow.implicitHeight
+            visible: HyprlandService.windowTitle !== "Desktop" && HyprlandService.windowTitle !== ""
 
             RowLayout {
                 id: appRow
@@ -106,14 +107,16 @@ Item {
 
                 Icon {
                     size:  Metrics.iconSizeSmall
-                    name:  HyprlandService.iconForClass(HyprlandService.windowClass)
+                    name:  HyprlandService.displayIcon
                     color: Colors.textMuted
                 }
 
                 Text {
                     text: {
-                        const c = HyprlandService.windowClass;
-                        return c.length > 14 ? c.substring(0, 12) + "…" : c;
+                        let app = HyprlandService.displayAppName;
+                        let title = HyprlandService.windowTitle;
+                        let c = (app && app !== title) ? app + " · " + title : title;
+                        return c.length > 25 ? c.substring(0, 23) + "…" : c;
                     }
                     color:            Colors.textMuted
                     font.pixelSize:   Metrics.textSizeNormal

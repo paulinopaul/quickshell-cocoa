@@ -28,7 +28,7 @@ Item {
                parent.width * Math.max(0.0, Math.min(1.0, root.value))))
 
         Behavior on width {
-            NumberAnimation { duration: Metrics.animNormal; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: Metrics.animFast; easing.type: Easing.OutQuad }
         }
     }
 }

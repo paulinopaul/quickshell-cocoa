@@ -1,0 +1,2 @@
+module Cocoa.Modules.Notifications
+NotificationPopup 1.0 NotificationPopup.qml

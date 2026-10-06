@@ -39,6 +39,14 @@ Item {
             "M11 5L6 9H2V15H6L11 19V5Z M19.07 4.93A10 10 0 0 1 19.07 19.07 M15.54 8.46A5 5 0 0 1 15.54 15.54",
         "audio-volume-muted":
             "M11 5L6 9H2V15H6L11 19V5Z M23 9L17 15 M17 9L23 15",
+        "display-brightness-symbolic":
+            "M12 4V2 M12 22V20 M4 12H2 M22 12H20 M6.34 6.34L4.93 4.93 M19.07 19.07L17.66 17.66 M6.34 17.66L4.93 19.07 M19.07 4.93L17.66 6.34 M16 12A4 4 0 1 1 8 12 4 4 0 0 1 16 12Z",
+        "network-wireless":
+            "M12 20H12.01 M2 8.82A15 15 0 0 1 22 8.82 M5 12.86A10 10 0 0 1 19 12.86 M8.5 16.43A5 5 0 0 1 15.5 16.43",
+        "network-wired":
+            "M2 7H22V17H2V7Z M7 17V20 M17 17V20 M9 7V4 M15 7V4",
+        "network-offline":
+            "M1 1L23 23 M16.72 11.06A10.94 10.94 0 0 1 19 12.86 M5 12.86A10.94 10.94 0 0 1 10.17 10.47 M10.71 5.05A15 15 0 0 1 22 8.82 M2 8.82A15 15 0 0 1 6.7 5.94 M8.5 16.43A5 5 0 0 1 15.5 16.43 M12 20H12.01",
         "system-shutdown":
             "M18.36 6.64A9 9 0 1 1 5.64 6.64 M12 2V12",
         "system-lock-screen":
@@ -52,7 +60,15 @@ Item {
         "app-window":
             "M3 3H21V21H3V3Z M3 9H21 M9 21V9",
         "application-x-executable":
-            "M3 3H21V21H3V3Z M3 9H21 M9 21V9"
+            "M3 3H21V21H3V3Z M3 9H21 M9 21V9",
+        "hub":
+            "M12 2L4 20H8L12 10L16 20H20L12 2Z M6 17H18",
+        "dialog-question":
+            "M12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22Z M12 17V17.5 M12 7C10.35 7 9 8.35 9 10C9 10.55 9.45 11 10 11C10.55 11 11 10.55 11 10C11 9.45 11.45 9 12 9C12.55 9 13 9.45 13 10C13 10.83 11.83 11.5 11 12.5V14",
+        "window-close":
+            "M18 6L6 18 M6 6L18 18",
+        "close":
+            "M18 6L6 18 M6 6L18 18"
     })
 
     readonly property var _fillPaths: ({
@@ -65,7 +81,8 @@ Item {
     readonly property string _sPath: _strokePaths[name] || ""
     readonly property string _fPath: _fillPaths[name]   || ""
     readonly property bool   _isVec: _sPath !== "" || _fPath !== ""
-    readonly property bool   _hasTheme: !_isVec && name !== "" && Quickshell.hasThemeIcon(name)
+    readonly property bool   _isAbsPath: name.startsWith("/")
+    readonly property bool   _hasTheme: !_isVec && !_isAbsPath && name !== "" && Quickshell.hasThemeIcon(name)
 
     // Vectores propios (Shapes 24×24, escalado por transform)
     Item {
@@ -103,6 +120,15 @@ Item {
     }
 
     // Iconos de tema del sistema (para apps instaladas)
+    Image {
+        anchors.fill: parent
+        visible: root._isAbsPath && status === Image.Ready
+        source: root._isAbsPath ? ("file://" + root.name) : ""
+        sourceSize: Qt.size(root.size, root.size)
+        fillMode: Image.PreserveAspectFit
+        mipmap: true
+    }
+
     IconImage {
         anchors.fill: parent
         visible: root._hasTheme && status === Image.Ready
@@ -114,7 +140,7 @@ Item {
         anchors.centerIn: parent
         width: 24; height: 24
         transform: Scale { xScale: root.size / 24.0; yScale: root.size / 24.0; origin.x: 12; origin.y: 12 }
-        visible: !root._isVec && !root._hasTheme
+        visible: !root._isVec && !root._hasTheme && !root._isAbsPath
 
         Shape {
             anchors.fill: parent

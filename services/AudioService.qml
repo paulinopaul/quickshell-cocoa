@@ -20,7 +20,7 @@ QtObject {
     function setVolume(v: real): void {
         if (sink && sink.audio) {
             sink.audio.muted = false;
-            sink.audio.volume = Math.max(0.0, Math.min(1.5, v));
+            sink.audio.volume = Math.max(0.0, Math.min(1.0, v));
         }
     }
 

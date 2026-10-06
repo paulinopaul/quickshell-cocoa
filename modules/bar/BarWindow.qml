@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import "../../theme"
 import "../../services"
 import "../../components"
@@ -24,9 +25,24 @@ import "../../components"
 PanelWindow {
     id: root
 
+    // Background dismiss area: closes active flyouts when clicking outside them
+    MouseArea {
+        id: outsideDismissArea
+        anchors.fill: parent
+        z: -1
+        enabled: root.mediaMenuVisible || root.networkMenuVisible || root.powerMenuVisible
+        onClicked: {
+            root.mediaMenuVisible = false;
+            root.centerOpenedViaShortcut = false;
+            root.networkMenuVisible = false;
+            root.powerMenuVisible = false;
+        }
+    }
+
     WlrLayershell.namespace: "cocoa-bar"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusiveZone: Metrics.exclusiveZone
+    WlrLayershell.keyboardFocus: networkMenuVisible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     anchors { top: true; left: true; right: true }
 
@@ -34,28 +50,56 @@ PanelWindow {
     // avoiding clipping. exclusiveZone remains fixed so other windows don't move.
     implicitHeight: Math.max(
         Metrics.exclusiveZone,
-        powerMenuVisible ? (powerMenu.y + powerMenu.height + 4) : 0,
-        mediaMenuVisible ? (mediaMenu.y + mediaMenu.height + 4) : 0
+        powerMenuVisible ? (powerMenu.y + powerMenu.height + 8) : 0,
+        mediaMenuVisible ? (mediaMenu.y + mediaMenu.height + 8) : 0,
+        networkMenuVisible ? (networkMenu.y + networkMenu.height + 8) : 0
     )
     
     color: "transparent"   // La ventana en sí es transparente; los paneles son sólidos
 
     signal launcherRequested()
 
+    // ─── Atajo global Super+P para alternar el panel central desacoplado ─────
+    GlobalShortcut {
+        name: "center_panel"
+        onPressed: {
+            if (root.mediaMenuVisible && root.centerOpenedViaShortcut) {
+                root.mediaMenuVisible = false;
+                root.centerOpenedViaShortcut = false;
+            } else {
+                root.mediaMenuVisible = true;
+                root.centerOpenedViaShortcut = true;
+                root.powerMenuVisible = false;
+                root.networkMenuVisible = false;
+            }
+        }
+    }
+
     // ─── Estado de menús ─────────────────────────────────────────────────────
     property bool powerMenuVisible: false
     property bool mediaMenuVisible: false
+    property bool networkMenuVisible: false
+    property bool centerOpenedViaShortcut: false
+    onMediaMenuVisibleChanged: NotificationService.centralPanelDetached = root.mediaMenuVisible
 
     // ─── Panel central (ancho completo arriba, estrecha abajo) ───────────────
     CenterCapsule {
         id: center
+        
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         height: Metrics.barHeight
         onClicked: {
-            root.mediaMenuVisible = !root.mediaMenuVisible;
-            if (root.mediaMenuVisible) root.powerMenuVisible = false;
+            if (root.mediaMenuVisible && !root.centerOpenedViaShortcut) {
+                root.mediaMenuVisible = false;
+                root.centerOpenedViaShortcut = false;
+            } else {
+                root.mediaMenuVisible = true;
+                root.centerOpenedViaShortcut = false;
+                root.powerMenuVisible = false;
+                root.networkMenuVisible = false;
+            }
         }
     }
 
@@ -74,16 +118,43 @@ PanelWindow {
         anchors.top:   parent.top
         onPowerRequested: {
             root.powerMenuVisible = !root.powerMenuVisible;
-            if (root.powerMenuVisible) root.mediaMenuVisible = false;
+            if (root.powerMenuVisible) {
+                root.mediaMenuVisible = false;
+                root.networkMenuVisible = false;
+            }
+        }
+        onNetworkRequested: {
+            root.networkMenuVisible = !root.networkMenuVisible;
+            if (root.networkMenuVisible) {
+                root.powerMenuVisible = false;
+                root.mediaMenuVisible = false;
+            }
         }
     }
 
-    // ─── Flyout de Reproductor (centro) ──────────────────────────────────────
-    MediaFlyout {
+    // ─── Panel Central Desacoplado Superpuesto (centro) ─────────────────────
+    CenterFlyout {
         id: mediaMenu
         visible: root.mediaMenuVisible
-        anchors.top: center.bottom
-        anchors.horizontalCenter: center.horizontalCenter
+        expandedWithSuperP: root.centerOpenedViaShortcut
+        anchors.top: parent.top
+        anchors.topMargin: 4
+        anchors.horizontalCenter: parent.horizontalCenter
+        z: 30
+        onCloseRequested: {
+            root.mediaMenuVisible = false;
+            root.centerOpenedViaShortcut = false;
+        }
+    }
+
+    // ─── Flyout de Red Wi-Fi (derecha) ──────────────────────────────────────
+    NetworkFlyout {
+        id: networkMenu
+        visible: root.networkMenuVisible
+        anchors.top: rightPanel.bottom
+        anchors.topMargin: 4
+        anchors.right: parent.right
+        anchors.rightMargin: 8
     }
 
     // ─── Flyout de control de energía (derecha) ──────────────────────────────
@@ -94,6 +165,7 @@ PanelWindow {
         anchors.rightMargin: 8
         anchors.top: rightPanel.bottom
         anchors.topMargin: 0
+
 
         width: powerRow.implicitWidth + 24
         height: 30

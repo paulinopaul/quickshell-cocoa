@@ -1,0 +1,4 @@
+module Cocoa.Modules.Wallpaper
+WallpaperWindow 1.0 WallpaperWindow.qml
+WallpaperCard 1.0 WallpaperCard.qml
+WallpaperTransitionWindow 1.0 WallpaperTransitionWindow.qml

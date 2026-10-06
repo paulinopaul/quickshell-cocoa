@@ -114,12 +114,101 @@ def parse_battery_info(
     }
 
 
+def parse_net_dev(content: str, prev_bytes: Tuple[int, int], dt_sec: float) -> Tuple[Dict[str, object], Tuple[int, int]]:
+    """
+    Parses /proc/net/dev content, ignoring 'lo', summing non-loopback interfaces.
+    Returns ({'rx_rate_bytes': float, 'tx_rate_bytes': float, 'speed_str': str}, (curr_rx, curr_tx))
+    """
+    if not content:
+        return {"rx_rate_bytes": 0.0, "tx_rate_bytes": 0.0, "speed_str": "0 KB/s"}, prev_bytes
+
+    total_rx = 0
+    total_tx = 0
+    for line in content.strip().splitlines():
+        if ":" not in line:
+            continue
+        iface, data = line.split(":", 1)
+        iface = iface.strip()
+        if iface == "lo":
+            continue
+        parts = data.split()
+        if len(parts) >= 9:
+            try:
+                total_rx += int(parts[0])
+                total_tx += int(parts[8])
+            except ValueError:
+                continue
+
+    prev_rx, prev_tx = prev_bytes
+    if prev_rx == 0 and prev_tx == 0:
+        return {"rx_rate_bytes": 0.0, "tx_rate_bytes": 0.0, "speed_str": "0 KB/s"}, (total_rx, total_tx)
+
+    delta_sec = max(0.1, dt_sec)
+    rx_delta = max(0, total_rx - prev_rx)
+    tx_delta = max(0, total_tx - prev_tx)
+    rx_rate = rx_delta / delta_sec
+    tx_rate = tx_delta / delta_sec
+
+    def fmt_speed(bps: float) -> str:
+        if bps >= 1024 * 1024:
+            return f"{bps / (1024 * 1024):.1f} MB/s"
+        elif bps >= 1024:
+            return f"{int(bps / 1024)} KB/s"
+        else:
+            return f"{int(bps)} B/s"
+
+    speed_str = f"↓ {fmt_speed(rx_rate)}  ↑ {fmt_speed(tx_rate)}"
+    return {
+        "rx_rate_bytes": rx_rate,
+        "tx_rate_bytes": tx_rate,
+        "speed_str": speed_str,
+    }, (total_rx, total_tx)
+
+
+def parse_intel_rc6(rc6_str: Optional[str], prev_rc6: int, dt_ms: int) -> Tuple[float, int]:
+    """
+    Calculates Intel GPU busy percentage from /sys/class/drm/card*/power/rc6_residency_ms.
+    Returns (gpu_usage_percent, current_rc6_ms)
+    """
+    if not rc6_str:
+        return 0.0, prev_rc6
+
+    try:
+        curr_rc6 = int(rc6_str.strip())
+    except ValueError:
+        return 0.0, prev_rc6
+
+    if prev_rc6 <= 0 or dt_ms <= 0:
+        return 0.0, curr_rc6
+
+    rc6_delta = max(0, curr_rc6 - prev_rc6)
+    idle_fraction = min(1.0, rc6_delta / float(dt_ms))
+    busy_percent = max(0.0, min(100.0, round((1.0 - idle_fraction) * 100.0, 1)))
+    return busy_percent, curr_rc6
+
+
+def parse_serial_device(device_str: Optional[str]) -> str:
+    """
+    Cleans serial port identifier into human readable form.
+    Returns 'Sin conexión' if empty/None.
+    """
+    if not device_str or not device_str.strip():
+        return "Sin conexión"
+    s = device_str.strip()
+    if s.startswith("/dev/"):
+        s = s[5:]
+    if s.startswith("serial/by-id/"):
+        s = s[len("serial/by-id/"):]
+    if s.startswith("usb-"):
+        s = s[4:]
+    return s
+
+
 class TestTelemetryParser(unittest.TestCase):
     """Rigorous unit test suite verifying telemetry logic and edge cases."""
 
     def test_cpu_stat_normal_calculation(self):
         prev = (1000, 500)
-        # Next line has 200 total delta (1200-1000), 50 idle delta (550-500) -> (200-50)/200 = 75%
         line = "cpu  500 0 150 550 0 0 0 0"
         usage, next_stat = parse_cpu_stat(prev, line)
         self.assertAlmostEqual(usage, 75.0, delta=1.0)
@@ -175,6 +264,51 @@ class TestTelemetryParser(unittest.TestCase):
         res_neg = parse_battery_info("-20\n", "Discharging\n")
         self.assertEqual(res_neg["percentage"], 0)
 
+    def test_network_speed_normal_calculation(self):
+        sample = """
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:   20000     200    0    0    0     0          0         0    20000     200    0    0    0     0       0          0
+  wlo1: 10485760  10000    0    0    0     0          0         0  1048576    2000    0    0    0     0       0          0
+"""
+        # Previous was (0, 0) -> init
+        res, state = parse_net_dev(sample, (0, 0), 2.0)
+        self.assertEqual(state, (10485760, 1048576))
+
+        # Next sample: 2MB received and 512KB transmitted over 2.0s -> 1MB/s down, 256KB/s up
+        next_sample = """
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:   25000     250    0    0    0     0          0         0    25000     250    0    0    0     0       0          0
+  wlo1: 12582912  11000    0    0    0     0          0         0  1572864    2500    0    0    0     0       0          0
+"""
+        res, state2 = parse_net_dev(next_sample, state, 2.0)
+        self.assertAlmostEqual(res["rx_rate_bytes"], 1048576.0, delta=10)
+        self.assertIn("1.0 MB/s", res["speed_str"])
+        self.assertIn("256 KB/s", res["speed_str"])
+
+    def test_intel_rc6_calculation(self):
+        # 1000ms elapsed, rc6 delta is 600ms -> busy was 40%
+        busy, curr = parse_intel_rc6("1600", 1000, 1000)
+        self.assertEqual(busy, 40.0)
+        self.assertEqual(curr, 1600)
+
+        # 100% idle
+        busy_idle, _ = parse_intel_rc6("2000", 1000, 1000)
+        self.assertEqual(busy_idle, 0.0)
+
+        # 100% busy (0 rc6 delta)
+        busy_full, _ = parse_intel_rc6("1000", 1000, 1000)
+        self.assertEqual(busy_full, 100.0)
+
+    def test_serial_device_parsing(self):
+        self.assertEqual(parse_serial_device(None), "Sin conexión")
+        self.assertEqual(parse_serial_device(""), "Sin conexión")
+        self.assertEqual(parse_serial_device("/dev/ttyUSB0"), "ttyUSB0")
+        self.assertEqual(parse_serial_device("/dev/serial/by-id/usb-FTDI_FT232R-if00"), "FTDI_FT232R-if00")
+        self.assertEqual(parse_serial_device("usb-Arduino_LLC_Arduino_Uno-if00"), "Arduino_LLC_Arduino_Uno-if00")
+
 
 if __name__ == "__main__":
     unittest.main()
+

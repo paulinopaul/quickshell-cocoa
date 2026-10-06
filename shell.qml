@@ -2,15 +2,17 @@ import QtQuick
 import Quickshell
 import "modules/bar"
 import "modules/launcher"
+import "modules/notifications"
+import "modules/wallpaper"
 import "services"
 
 ShellRoot {
     id: root
 
-    // ThemeService debe estar activo desde el inicio para leer current_theme.json
-    // y actualizar Colors antes de que los paneles terminen de renderizar.
-    // La propiedad no se usa directamente; acceder a ThemeService lo instancia.
+    // ThemeService y NotificationService deben estar activos desde el inicio
     readonly property var _theme: ThemeService
+    readonly property var _notif: NotificationService
+    readonly property var _wallpaper: WallpaperService
 
     // Barra superior
     BarWindow {
@@ -18,12 +20,23 @@ ShellRoot {
         onLauncherRequested: launcher.toggle()
     }
 
-    // Lanzador de aplicaciones integrado
+    // PopUp de Notificaciones emergentes
+    NotificationPopup {}
+
     LauncherWindow {
         id: launcher
     }
 
-    function toggleLauncher(): void {
+    WallpaperTransitionWindow {
+        id: wallpaperTransition
+    }
+
+    WallpaperWindow {
+        id: wallpaperSelector
+        transitionWindow: wallpaperTransition
+    }
+
+    function toggleLauncher() {
         launcher.toggle();
     }
 }

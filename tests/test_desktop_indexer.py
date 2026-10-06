@@ -102,6 +102,23 @@ class TestDesktopIndexer(unittest.TestCase):
         self.assertEqual(parsed["exec"], "firefox")
         self.assertEqual(parsed["icon"], "firefox")
 
+    def test_ghostty_desktop_entry(self):
+        sample = """
+        [Desktop Entry]
+        Version=1.0
+        Name=Ghostty
+        Type=Application
+        Exec=/usr/bin/ghostty --gtk-single-instance=true
+        Icon=com.mitchellh.ghostty
+        StartupWMClass=com.mitchellh.ghostty
+        Terminal=false
+        """
+        parsed = parse_desktop_entry(sample)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed["name"], "Ghostty")
+        self.assertEqual(parsed["exec"], "/usr/bin/ghostty --gtk-single-instance=true")
+        self.assertEqual(parsed["icon"], "com.mitchellh.ghostty")
+
     def test_nodisplay_filtered_out(self):
         sample = """
         [Desktop Entry]

@@ -7,34 +7,59 @@ import "../../theme"
 import "../../services"
 import "../../components"
 
+// LauncherWindow: Lanzador modal anclado a la parte inferior central.
+// Emerge desde abajo con rebote elástico (OutBack) y se oculta con salto de anticipación
+// y deslizamiento hacia abajo (jump & dive), desmapeando Wayland al terminar.
+
 PanelWindow {
     id: root
 
     property bool isOpen: false
+    property bool surfaceActive: false
     property int  selectedIndex: 0
     property string searchQuery: ""
+    property bool mouseInside: false
     readonly property var filteredApps: AppService.search(searchQuery)
 
     WlrLayershell.namespace: "cocoa-launcher"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    anchors { top: true; bottom: true; left: true; right: true }
+    // Anclado en la parte inferior central (centrado automático en Wayland)
+    anchors { bottom: true }
+    margins { bottom: 12 }
 
+    implicitWidth: 520
+    implicitHeight: 480
+    exclusionMode: ExclusionMode.Ignore
     color: "transparent"
-    visible: isOpen
+
+    // La superficie solo existe en Wayland mientras esté activa o en animación de salida
+    visible: surfaceActive
 
     function open(): void {
         searchQuery = "";
         selectedIndex = 0;
+        mouseInside = false;
+        closeTimer.stop();
+        exitAnim.stop();
+
+        surfaceActive = true;
         isOpen = true;
+
+        enterAnim.restart();
         searchInput.forceActiveFocus();
     }
 
     function close(): void {
-        isOpen = false;
-        searchQuery = "";
-        selectedIndex = 0;
+        if (!isOpen && !surfaceActive) return;
+
+        closeTimer.stop();
+        mouseInside = false;
+        isOpen = false; // Libera inmediatamente el foco de teclado de Wayland
+
+        enterAnim.stop();
+        exitAnim.restart();
     }
 
     function toggle(): void {
@@ -42,29 +67,112 @@ PanelWindow {
         else open();
     }
 
-    // Integración atajo global de Hyprland (SUPER + SPACE)
+    // Integración atajo global de Hyprland (SUPER + SPACE / SUPER + R)
     GlobalShortcut {
         name: "launcher"
         onPressed: root.toggle()
     }
 
-    // Fondo backdrop: click cierra el launcher
-    MouseArea {
-        anchors.fill: parent
-        onClicked: root.close()
+    // Temporizador de estabilidad para cierre por salida de ratón
+    Timer {
+        id: closeTimer
+        interval: 180
+        repeat: false
+        onTriggered: root.close()
     }
 
-    // Modal central
+    // Animación de entrada: deslizamiento desde abajo con rebote OutBack
+    ParallelAnimation {
+        id: enterAnim
+        NumberAnimation {
+            target: card
+            property: "y"
+            from: root.implicitHeight + 40
+            to: 20
+            duration: 260
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.35
+        }
+        NumberAnimation {
+            target: card
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            duration: 200
+        }
+    }
+
+    // Animación de salida: Salto de anticipación hacia arriba (jump) y caída rápida (dive)
+    SequentialAnimation {
+        id: exitAnim
+
+        // 1. Salto hacia arriba (jump)
+        NumberAnimation {
+            target: card
+            property: "y"
+            to: 4
+            duration: 75
+            easing.type: Easing.OutQuad
+        }
+
+        // 2. Caída acelerada hacia abajo (dive)
+        ParallelAnimation {
+            NumberAnimation {
+                target: card
+                property: "y"
+                to: root.implicitHeight + 40
+                duration: 190
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: card
+                property: "opacity"
+                to: 0.0
+                duration: 190
+            }
+        }
+
+        // 3. Desmapeo total de la superficie Wayland
+        ScriptAction {
+            script: {
+                root.surfaceActive = false;
+                root.searchQuery = "";
+                root.selectedIndex = 0;
+            }
+        }
+    }
+
+    // Tarjeta del modal con margen superior para el salto de anticipación
     Rectangle {
         id: card
-        width: 500
-        height: 460
-        anchors.centerIn: parent
-        radius: 8
+        x: 0
+        y: 20
+        width: parent.width
+        height: parent.height - 20
+        radius: 12
         color: Colors.surfaceRaised
+        border.color: Colors.surface
+        border.width: 1
+        clip: true
 
-        // Absorbe clicks internos para que no disparen el cierre
-        MouseArea { anchors.fill: parent }
+        // Rastreo de presencia del cursor sobre la zona
+        MouseArea {
+            id: hoverTracker
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+
+            onEntered: {
+                root.mouseInside = true;
+                closeTimer.stop();
+            }
+
+            onExited: {
+                if (root.mouseInside && root.isOpen) {
+                    closeTimer.restart();
+                }
+            }
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -74,16 +182,16 @@ PanelWindow {
             // Barra de búsqueda
             Rectangle {
                 Layout.fillWidth: true
-                height: 36
-                radius: 6
+                height: 38
+                radius: 8
                 color: Colors.surface
                 border.color: searchInput.activeFocus ? Colors.accent : Colors.textDim
                 border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
                     spacing: 8
 
                     Icon {
@@ -148,7 +256,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                spacing: 3
+                spacing: 4
                 model: root.filteredApps
 
                 delegate: AppItem {
