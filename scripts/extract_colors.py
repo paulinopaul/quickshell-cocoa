@@ -142,17 +142,20 @@ def extract_theme(image_path: str) -> dict[str, str]:
 
         candidates.append((h, s, l, weight))
 
-    # Si no quedan candidatos, fallback a blanco neutro
+    # Si no quedan candidatos, fallback a valores seguros
     if not candidates:
-        accent_hex = "#d8d8d8"
-        muted_hex = "#909090"
-        dim_hex = "#484848"
-        text_hex = "#ffffff"
         return {
-            "text":      text_hex,
-            "textMuted": muted_hex,
-            "textDim":   dim_hex,
-            "accent":    accent_hex,
+            "mode": "auto",
+            "surface": "#161922",
+            "surfaceDark": "#10121a",
+            "surfaceRaised": "#1f2430",
+            "surfaceBorder": "#323a4e",
+            "surfaceHover": "#2a3142",
+            "background": "#0e1017",
+            "text": "#ffffff",
+            "textMuted": "#909090",
+            "textDim": "#484848",
+            "accent": "#d8d8d8",
         }
 
     # Seleccionar el candidato con mejor puntuación de "viveza"
@@ -168,11 +171,27 @@ def extract_theme(image_path: str) -> dict[str, str]:
     h_m, s_m, l_m = _derive_muted(h_a, s_a, l_a)
     h_d, s_d, l_d = _derive_dim(h_a, s_a, l_a)
 
+    # Derivar superficies dinámicas tintadas con el color del wallpaper
+    s_surf = _clamp(s_best * 0.30, 0.10, 0.26)
+    surf_hex = _hsl_to_hex(h_best, s_surf, 0.12)
+    surf_dark_hex = _hsl_to_hex(h_best, s_surf, 0.08)
+    surf_raised_hex = _hsl_to_hex(h_best, s_surf, 0.16)
+    surf_hover_hex = _hsl_to_hex(h_best, s_surf, 0.20)
+    surf_border_hex = _hsl_to_hex(h_best, _clamp(s_best * 0.35, 0.12, 0.32), 0.24)
+    bg_hex = _hsl_to_hex(h_best, s_surf, 0.06)
+
     return {
-        "text":      "#ffffff",              # Texto principal siempre blanco
+        "mode": "auto",
+        "surface": surf_hex,
+        "surfaceDark": surf_dark_hex,
+        "surfaceRaised": surf_raised_hex,
+        "surfaceBorder": surf_border_hex,
+        "surfaceHover": surf_hover_hex,
+        "background": bg_hex,
+        "text": "#ffffff",
         "textMuted": _hsl_to_hex(h_m, s_m, l_m),
-        "textDim":   _hsl_to_hex(h_d, s_d, l_d),
-        "accent":    _hsl_to_hex(h_a, s_a, l_a),
+        "textDim": _hsl_to_hex(h_d, s_d, l_d),
+        "accent": _hsl_to_hex(h_a, s_a, l_a),
     }
 
 

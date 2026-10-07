@@ -113,6 +113,21 @@ SECURITY:                               WPA2
         neg = next(n for n in nets if n["ssid"] == "NegativeSignal")
         self.assertEqual(neg["signal"], 0)
 
+    def test_disconnect_function_contract(self):
+        from unittest.mock import patch, MagicMock
+        from scripts.wifi_manager import disconnect_network
+
+        with patch("subprocess.run") as mock_run, patch("scripts.wifi_manager.scan_networks") as mock_scan:
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_run.return_value = mock_proc
+
+            res = disconnect_network("TestSSID")
+            self.assertTrue(res["success"])
+            self.assertEqual(res["action"], "disconnect")
+            self.assertIn("Desconectado", res["message"])
+            mock_scan.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

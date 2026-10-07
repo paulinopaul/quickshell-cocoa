@@ -1,0 +1,11 @@
+SettingsWindow 1.0 SettingsWindow.qml
+SettingsTabButton 1.0 SettingsTabButton.qml
+NetworkSettingsView 1.0 NetworkSettingsView.qml
+ThemeSettingsView 1.0 ThemeSettingsView.qml
+AudioSettingsView 1.0 AudioSettingsView.qml
+DisplaySettingsView 1.0 DisplaySettingsView.qml
+DefaultAppsView 1.0 DefaultAppsView.qml
+KeybindsView 1.0 KeybindsView.qml
+VisualSettingsView 1.0 VisualSettingsView.qml
+PanelsSettingsView 1.0 PanelsSettingsView.qml
+HyprlandConfigView 1.0 HyprlandConfigView.qml

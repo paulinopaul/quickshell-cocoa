@@ -149,6 +149,53 @@ def connect_network(ssid: str, password: Optional[str] = None) -> Dict[str, obje
     return result
 
 
+def disconnect_network(target_ssid: Optional[str] = None) -> Dict[str, object]:
+    """
+    Disconnects the active Wi-Fi connection using nmcli.
+    """
+    try:
+        if target_ssid:
+            cmd = ["nmcli", "connection", "down", "id", target_ssid]
+        else:
+            # Query active wifi device
+            dev_proc = subprocess.run(
+                ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "dev"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            wifi_dev = None
+            for line in dev_proc.stdout.splitlines():
+                parts = line.split(":")
+                if len(parts) >= 3 and parts[1] == "wifi" and "connected" in parts[2]:
+                    wifi_dev = parts[0]
+                    break
+            
+            if wifi_dev:
+                cmd = ["nmcli", "device", "disconnect", wifi_dev]
+            else:
+                cmd = ["nmcli", "device", "disconnect", "wlo1"]
+
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        success = (proc.returncode == 0)
+        msg = "Desconectado correctamente" if success else (proc.stderr or proc.stdout or "Error al desconectar").strip()
+        result = {
+            "success": success,
+            "message": msg,
+            "action": "disconnect"
+        }
+    except Exception as e:
+        result = {
+            "success": False,
+            "message": str(e),
+            "action": "disconnect"
+        }
+
+    _write_status(result)
+    scan_networks()
+    return result
+
+
 def _write_status(data: Dict[str, object]) -> None:
     tmp_path = WIFI_STATUS_FILE + ".tmp"
     try:
@@ -161,7 +208,7 @@ def _write_status(data: Dict[str, object]) -> None:
 
 def main():
     if len(sys.argv) < 2:
-        print("Uso: wifi_manager.py <scan|connect> [ssid] [password]")
+        print("Uso: wifi_manager.py <scan|connect|disconnect> [ssid] [password]")
         sys.exit(1)
 
     action = sys.argv[1].lower()
@@ -175,6 +222,12 @@ def main():
         ssid = sys.argv[2]
         pwd = sys.argv[3] if len(sys.argv) > 3 else None
         res = connect_network(ssid, pwd)
+        print(json.dumps(res, indent=2))
+        if not res["success"]:
+            sys.exit(1)
+    elif action == "disconnect":
+        ssid = sys.argv[2] if len(sys.argv) > 2 else None
+        res = disconnect_network(ssid)
         print(json.dumps(res, indent=2))
         if not res["success"]:
             sys.exit(1)

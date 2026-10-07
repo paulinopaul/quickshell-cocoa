@@ -32,9 +32,9 @@ Item {
         id: bgRect
         anchors.fill: parent
         radius: 18
-        color: Colors.surface
+        color: Qt.rgba(Colors.surface.r, Colors.surface.g, Colors.surface.b, UiConfigService.centerCapsule.bgOpacity !== undefined ? UiConfigService.centerCapsule.bgOpacity : 1.0)
         border.color: Colors.surfaceRaised
-        border.width: 1
+        border.width: UiConfigService.centerCapsule.borderWidth !== undefined ? UiConfigService.centerCapsule.borderWidth : 1
         clip: true
 
         // Sutil fondo dinámico cuando la sección de música está activa

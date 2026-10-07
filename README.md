@@ -7,7 +7,7 @@
 [![Compositor: Hyprland](https://img.shields.io/badge/Compositor-Hyprland_%3E%3D_0.40.0-00ADD8?style=flat-square&logo=hyprland&logoColor=white)](https://hyprland.org)
 [![Framework: Quickshell](https://img.shields.io/badge/Framework-Quickshell_%3E%3D_0.3.1-41CD52?style=flat-square&logo=qt&logoColor=white)](https://quickshell.outfoxxed.me)
 [![Wayland Layer: zwlr_layer_shell_v1](https://img.shields.io/badge/Wayland-Layer_Shell_v1-E95420?style=flat-square&logo=wayland&logoColor=white)](https://wayland.freedesktop.org)
-[![Tests: 137 Passing](https://img.shields.io/badge/Tests-137_Passing-brightgreen?style=flat-square&logo=python&logoColor=white)](tests/)
+[![Tests: 148 Passing](https://img.shields.io/badge/Tests-148_Passing-brightgreen?style=flat-square&logo=python&logoColor=white)](tests/)
 [![Architecture: Clean & Modular](https://img.shields.io/badge/Architecture-SOLID_%2F_Reactive-blueviolet?style=flat-square)](#architecture)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
@@ -76,6 +76,34 @@
 * **Direct SysFS Polling**: `BrightnessService.qml` reads kernel backlight directly from `/sys/class/backlight/*/actual_brightness` via `FileView` at 100ms intervals, eliminating recurring `brightnessctl` shell forks.
 * **Direct Process Dispatch**: Binary calls (`wpctl`, `brightnessctl`) invoke executables directly without intermediate bash wrappers.
 * **Embedded Vector Icons (`components/Icon.qml`)**: Self-contained SVG paths for network states (`network-wireless`, `network-wired`, `network-offline`), rendering reliably on bare Wayland without requiring external GTK/Qt icon bridges (`qt6ct`).
+
+### 5. Standalone Settings Dialog (`modules/settings/SettingsWindow.qml`)
+* **Elevated Overlay Architecture**: `WlrLayer.Overlay` centered without screen edge anchors, accessible via `Super + I` or the top bar gear icon.
+* **Decoupled Kinetic Lifecycle**: Elastic entrance bounce (`Easing.OutBack`) and smooth exit fade (`Easing.InQuad`), freeing Wayland keyboard focus instantaneously on dismissal.
+* **Wallpaper & Theme Engine (`ThemeSettingsView.qml`, `scripts/theme_manager.py`)**:
+  * **9 Curated Global Palettes**: NeoNord (`#88c0d0`), Catppuccin Mocha (`#cba6f7`), Tokyo Night (`#7aa2f7`), Gruvbox Retro (`#d79921`), Rose Pine (`#eb6f92`), Cyberpunk Neon (`#00f0ff`), Emerald Forest (`#10b981`), Sunset Glow (`#f59e0b`), Cocoa Classic (`#e0a370`).
+  * **Wallpaper-to-Theme Binding**: Directly link any named palette or custom color to the current wallpaper. Mappings are persisted in `theme/wallpaper_themes.json`.
+  * **Contextual Automatic Switching**: When wallpapers change (`scripts/set_wallpaper.sh`), `theme_manager.py apply-for-wallpaper` detects assigned themes and applies them instantly, or automatically extracts vibrant colors via K-Means if unmapped.
+  * **Live Hyprland Border Sync**: Automatically sets `general:col.active_border` via `hyprctl`.
+* **Integrated Network Center (`NetworkSettingsView.qml`)**:
+  * Real-time network telemetry (Wi-Fi SSID, Ethernet LAN, Disconnected).
+  * Asynchronous Wi-Fi scanning with spinning activity indicators.
+  * Expandable access point list with signal meters, lock glyphs, inline password field, and clean disconnection flow.
+* **PipeWire Audio Control (`AudioSettingsView.qml`, `scripts/audio_manager.py`)**:
+  * Real-time enumeration of audio output devices (Sinks) and input devices (Sources) via `wpctl status`.
+  * One-click default device switching (`wpctl set-default <id>`).
+  * Per-device volume level sliders and instant mute toggles.
+* **Display & Monitor Configuration (`DisplaySettingsView.qml`, `scripts/display_manager.py`)**:
+  * Real-time monitor telemetry from `hyprctl monitors -j`.
+  * Resolution, refresh rate (Hz), and Wayland fractional scaling controls.
+  * Immediate live application via `hyprctl keyword monitor` and persistent writing to `~/.config/hypr/hyprland.conf`.
+* **Default Applications Center (`DefaultAppsView.qml`, `scripts/default_apps_manager.py`)**:
+  * Configuration of default Terminal (`$terminal` in `hyprland.conf`), Web Browser, File Manager, and Code Editor via `xdg-mime default`.
+  * Detection chips for installed common apps.
+* **Keybindings Reference (`KeybindsView.qml`, `scripts/keybinds_manager.py`)**:
+  * Active Hyprland bindings parsed live from `hyprctl binds -j`.
+  * Bitwise modmask decoding (`SUPER`, `SHIFT`, `CTRL`, `ALT`) with categorized human-readable action summaries.
+  * Real-time fuzzy search filter by key combination, category, or dispatcher.
 
 ---
 

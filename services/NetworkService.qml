@@ -14,6 +14,7 @@ QtObject {
     property var networks: []
     property bool isScanning: false
     property bool isConnecting: false
+    property bool isDisconnecting: false
     property string connectionError: ""
     property string connectionSuccess: ""
 
@@ -35,6 +36,16 @@ QtObject {
         running: false
         onExited: (exitCode) => {
             root.isConnecting = false;
+            root._loadWifiStatus();
+            root.scanNetworks();
+        }
+    }
+
+    property Process disconnectProc: Process {
+        command: []
+        running: false
+        onExited: (exitCode) => {
+            root.isDisconnecting = false;
             root._loadWifiStatus();
             root.scanNetworks();
         }
@@ -86,6 +97,19 @@ QtObject {
         }
         connectProc.command = args;
         connectProc.running = true;
+    }
+
+    function disconnectFromNetwork(targetSsid) {
+        if (isDisconnecting) return;
+        isDisconnecting = true;
+        connectionError = "";
+        connectionSuccess = "";
+        let args = ["python3", "/home/paul/.config/quickshell/cocoa/scripts/wifi_manager.py", "disconnect"];
+        if (targetSsid && targetSsid.trim() !== "") {
+            args.push(targetSsid.trim());
+        }
+        disconnectProc.command = args;
+        disconnectProc.running = true;
     }
 
     property Timer pollTimer: Timer {

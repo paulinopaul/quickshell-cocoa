@@ -4,6 +4,7 @@ import "modules/bar"
 import "modules/launcher"
 import "modules/notifications"
 import "modules/wallpaper"
+import "modules/settings"
 import "services"
 
 ShellRoot {
@@ -18,6 +19,7 @@ ShellRoot {
     BarWindow {
         id: bar
         onLauncherRequested: launcher.toggle()
+        onSettingsRequested: settingsDialog.toggle()
     }
 
     // PopUp de Notificaciones emergentes
@@ -36,7 +38,15 @@ ShellRoot {
         transitionWindow: wallpaperTransition
     }
 
+    SettingsWindow {
+        id: settingsDialog
+    }
+
     function toggleLauncher() {
         launcher.toggle();
+    }
+
+    function toggleSettings() {
+        settingsDialog.toggle();
     }
 }

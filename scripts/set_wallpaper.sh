@@ -91,9 +91,9 @@ fi
 # Guardar ruta del wallpaper actual para referencia
 echo "$WALL" > "$COCOA_DIR/theme/current_wallpaper.txt"
 
-# ── 3. Extraer colores y generar tema ────────────────────────────────────────
-echo "→ Extrayendo paleta de colores..."
-python3 "$SCRIPTS_DIR/extract_colors.py" "$WALL" "$THEME_FILE"
+# ── 3. Extraer colores y generar tema (o aplicar tema asociado al wallpaper) ──
+echo "→ Sincronizando paleta de colores y tema asociado..."
+python3 "$SCRIPTS_DIR/theme_manager.py" apply-for-wallpaper "$WALL"
 
 # ── 4. Sincronizar marco y colores con Hyprland ──────────────────────────────
 if [[ -x "$HOME/.config/hypr/scripts/apply_wallpaper_theme.sh" ]]; then

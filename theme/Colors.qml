@@ -1,26 +1,27 @@
-// Paleta Cocoa: dos secciones claramente separadas.
-//  FIJO     → readonly. Los paneles nunca cambian de color.
-//  DINÁMICO → writable.  ThemeService los actualiza según el wallpaper.
-// El sistema de theming SOLO modifica text / textMuted / textDim / accent.
-// Las superficies (surface, surfaceRaised, surfaceHover) son invariantes.
+// Paleta Cocoa: Sistema de colores dinámicos unificado.
+// Superficies (islas/paneles), bordes, textos y acentos se sincronizan reactivamente
+// con el tema seleccionado o el fondo de pantalla en ejecución.
 
 import QtQuick
 pragma Singleton
 
 QtObject {
-    // ── SUPERFICIES — NUNCA CAMBIAN ──────────────────────────────────────────
-    readonly property color background: '#0a0a0a'
-    readonly property color surface: '#0a0a0a' // Color del panel — fijo
-    readonly property color surfaceRaised: '#0a0a0a'
-    readonly property color surfaceHover: '#0a0a0a'
-    // ── TEXTO E ICONOS — DINÁMICOS (ThemeService los actualiza) ──────────────
-    // Valores por defecto: blanco neutro (funciona sobre cualquier wallpaper oscuro/claro).
+    // ── SUPERFICIES Y FONDOS DINÁMICOS ──────────────────────────────────────────
+    // Se adaptan dinámicamente según el tema seleccionado o el wallpaper
+    property color background: '#0e1017'
+    property color surface: '#161922'
+    property color surfaceDark: '#10121a'
+    property color surfaceRaised: '#1f2430'
+    property color surfaceHover: '#2a3142'
+    property color surfaceBorder: '#323a4e'
+
+    // ── TEXTO E ICONOS — DINÁMICOS ──────────────────────────────────────────────
     property color text: "#ffffff"
-    property color textMuted: "#b8b8b8"
-    property color textDim: "#606060"
-    property color accent: "#d0d0d0"
-    // ── ESTADO FUNCIONAL — SEMI-DINÁMICO ─────────────────────────────────────
-    // Derivados del accent cuando ThemeService los calcula, o fijos si no.
+    property color textMuted: "#b8c0d0"
+    property color textDim: "#657088"
+    property color accent: "#88c0d0"
+
+    // ── ESTADO FUNCIONAL ────────────────────────────────────────────────────────
     property color stateOk: "#7ab87a"
     property color stateWarn: "#c8a864"
     property color stateError: "#c87070"

@@ -1,0 +1,54 @@
+{
+  "mappings": {
+    "/home/paul/Pictures/Wallpapers/w7.jpg": {
+      "themeName": "Rose Pine",
+      "name": "Rose Pine",
+      "accent": "#eb6f92",
+      "text": "#ffffff",
+      "textMuted": "#c4a7e7",
+      "textDim": "#6e6a86",
+      "description": "Soft pine rose and lilac undertones"
+    },
+    "/home/paul/Pictures/Wallpapers/w4.jpg": {
+      "themeName": "Emerald Forest",
+      "name": "Emerald Forest",
+      "accent": "#10b981",
+      "surface": "#11221a",
+      "surfaceDark": "#0c1712",
+      "surfaceRaised": "#183327",
+      "surfaceBorder": "#27523f",
+      "surfaceHover": "#1f4233",
+      "background": "#070e0b",
+      "text": "#f0fdf4",
+      "textMuted": "#34d399",
+      "textDim": "#374151",
+      "description": "Lush vibrant botanical green"
+    },
+    "/home/paul/Pictures/Wallpapers/w5.jpg": {
+      "themeName": "Emerald Forest",
+      "name": "Emerald Forest",
+      "accent": "#10b981",
+      "surface": "#11221a",
+      "surfaceDark": "#0c1712",
+      "surfaceRaised": "#183327",
+      "surfaceBorder": "#27523f",
+      "surfaceHover": "#1f4233",
+      "background": "#070e0b",
+      "text": "#f0fdf4",
+      "textMuted": "#34d399",
+      "textDim": "#374151",
+      "description": "Lush vibrant botanical green"
+    }
+  },
+  "activeTheme": "NeoNord",
+  "customThemes": {
+    "Tema de w7": {
+      "text": "#ffffff",
+      "textMuted": "#5da3b2",
+      "textDim": "#4e6367",
+      "accent": "#74c5d6",
+      "name": "Tema de w7",
+      "description": "Generado a partir de w7.jpg"
+    }
+  }
+}

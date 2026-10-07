@@ -1,0 +1,12 @@
+schema_version: 1
+project: cocoa
+stack: "Quickshell (Qt6/QML), Python 3.12, Hyprland, Wayland Layer Shell"
+strict_tdd: false
+testing:
+  runner: "python3 -m unittest"
+  command: "python3 -m unittest discover tests"
+  layers:
+    - unit
+    - contract
+persistence:
+  mode: openspec

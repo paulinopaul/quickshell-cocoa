@@ -21,6 +21,8 @@ Item {
 
     signal launcherRequested()
 
+    visible: UiConfigService.leftPanel.visible !== false
+
     readonly property int sk:  Metrics.sideTrapSkew   // Magnitud del recorte diagonal
     readonly property int ph:  Metrics.sideHeight      // Altura del panel
 
@@ -34,9 +36,9 @@ Item {
         layer.samples: 4
 
         ShapePath {
-            fillColor:   Colors.surface
-            strokeColor: "transparent"
-            strokeWidth: 0
+            fillColor:   Qt.rgba(Colors.surface.r, Colors.surface.g, Colors.surface.b, UiConfigService.leftPanel.bgOpacity !== undefined ? UiConfigService.leftPanel.bgOpacity : 1.0)
+            strokeColor: Colors.surfaceBorder
+            strokeWidth: UiConfigService.leftPanel.borderWidth !== undefined ? UiConfigService.leftPanel.borderWidth : 1
 
             startX: 0;        startY: 0
             PathLine { x: root.width;        y: 0 }
@@ -56,6 +58,7 @@ Item {
 
         // Indicadores de workspaces
         Row {
+            visible: UiConfigService.leftPanel.showWorkspaces !== false
             spacing: 4
 
             Repeater {
@@ -92,13 +95,14 @@ Item {
             width: 1; height: 10
             color: Colors.textDim
             opacity: 0.5
+            visible: (UiConfigService.leftPanel.showWorkspaces !== false) && (UiConfigService.leftPanel.showActiveWindow !== false) && (HyprlandService.windowTitle !== "Desktop" && HyprlandService.windowTitle !== "")
         }
 
         // Icono + clase de la app activa (envuelto en Item para que MouseArea pueda usar anchors)
         Item {
             implicitWidth:  appRow.implicitWidth
             implicitHeight: appRow.implicitHeight
-            visible: HyprlandService.windowTitle !== "Desktop" && HyprlandService.windowTitle !== ""
+            visible: UiConfigService.leftPanel.showActiveWindow !== false && HyprlandService.windowTitle !== "Desktop" && HyprlandService.windowTitle !== ""
 
             RowLayout {
                 id: appRow

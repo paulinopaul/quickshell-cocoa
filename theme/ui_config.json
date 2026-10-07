@@ -1,0 +1,47 @@
+{
+  "hyprland": {
+    "borderSize": 2,
+    "rounding": 14,
+    "gapsIn": 5,
+    "gapsOut": 15,
+    "shadowEnabled": true,
+    "shadowRange": 15,
+    "shadowPower": 6
+  },
+  "ghostty": {
+    "theme": "Onenord",
+    "backgroundOpacity": 0.95,
+    "backgroundBlur": 24
+  },
+  "panels": {
+    "left": {
+      "visible": true,
+      "bgOpacity": 0.95,
+      "borderWidth": 0,
+      "showWorkspaces": true,
+      "showActiveWindow": true
+    },
+    "center": {
+      "visible": true,
+      "bgOpacity": 0.95,
+      "borderWidth": 0,
+      "showMedia": true,
+      "showCpu": true,
+      "showRam": true,
+      "showGpu": true,
+      "showNeon": true
+    },
+    "right": {
+      "visible": true,
+      "bgOpacity": 0.95,
+      "borderWidth": 0,
+      "showBattery": true,
+      "showNetwork": true,
+      "showMic": true,
+      "showVolume": true,
+      "showBrightness": true,
+      "showSettings": true,
+      "showPower": true
+    }
+  }
+}

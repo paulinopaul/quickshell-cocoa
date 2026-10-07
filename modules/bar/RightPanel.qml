@@ -20,6 +20,7 @@ Item {
 
     signal powerRequested()
     signal networkRequested()
+    signal settingsRequested()
 
     readonly property int sk: Metrics.sideTrapSkew
     readonly property int ph: Metrics.sideHeight
@@ -64,6 +65,8 @@ Item {
         }
     }
 
+    visible: UiConfigService.rightPanel.visible !== false
+
     implicitWidth:  (root.hudActive ? hudContainer.implicitWidth : contentRow.implicitWidth) + Metrics.innerPadH * 2 + sk
     implicitHeight: ph
 
@@ -77,9 +80,9 @@ Item {
         layer.samples: 4
 
         ShapePath {
-            fillColor:   Colors.surface
-            strokeColor: "transparent"
-            strokeWidth: 0
+            fillColor:   Qt.rgba(Colors.surface.r, Colors.surface.g, Colors.surface.b, UiConfigService.rightPanel.bgOpacity !== undefined ? UiConfigService.rightPanel.bgOpacity : 1.0)
+            strokeColor: Colors.surfaceBorder
+            strokeWidth: UiConfigService.rightPanel.borderWidth !== undefined ? UiConfigService.rightPanel.borderWidth : 1
 
             startX: 0;         startY: 0
             PathLine { x: root.width;   y: 0 }
@@ -170,7 +173,7 @@ Item {
 
         // Batería
         RowLayout {
-            visible: SystemService.hasBattery
+            visible: (UiConfigService.rightPanel.showBattery !== false) && SystemService.hasBattery
             spacing: 4
 
             Icon {
@@ -188,10 +191,11 @@ Item {
             }
         }
 
-        Rectangle { visible: SystemService.hasBattery; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+        Rectangle { visible: (UiConfigService.rightPanel.showBattery !== false) && SystemService.hasBattery; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
 
         // Red (Wi-Fi / LAN) - Click para desplegar selector de redes
         Item {
+            visible: UiConfigService.rightPanel.showNetwork !== false
             implicitWidth: netRow.implicitWidth + 4
             implicitHeight: Metrics.iconSizeMedium + 4
 
@@ -223,10 +227,11 @@ Item {
         }
 
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+        Rectangle { visible: UiConfigService.rightPanel.showNetwork !== false; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
 
         // Micrófono
         Item {
+            visible: UiConfigService.rightPanel.showMic !== false
             implicitWidth:  Metrics.iconSizeMedium + 4
             implicitHeight: Metrics.iconSizeMedium + 4
 
@@ -244,10 +249,11 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+        Rectangle { visible: UiConfigService.rightPanel.showMic !== false; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
 
         // Brillo
         Item {
+            visible: UiConfigService.rightPanel.showBrightness !== false
             implicitWidth:  brightRow.implicitWidth + 4
             implicitHeight: Metrics.iconSizeMedium + 4
 
@@ -280,10 +286,11 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+        Rectangle { visible: UiConfigService.rightPanel.showBrightness !== false; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
 
         // Volumen
         Item {
+            visible: UiConfigService.rightPanel.showVolume !== false
             implicitWidth:  audioRow.implicitWidth + 4
             implicitHeight: Metrics.iconSizeMedium + 4
 
@@ -317,10 +324,35 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+        Rectangle { visible: UiConfigService.rightPanel.showVolume !== false; width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
+
+        // Botón de configuración
+        Item {
+            visible: UiConfigService.rightPanel.showSettings !== false
+            implicitWidth:  Metrics.iconSizeMedium + 4
+            implicitHeight: Metrics.iconSizeMedium + 4
+
+            Icon {
+                anchors.centerIn: parent
+                size:  Metrics.iconSizeSmall
+                name:  "preferences-system"
+                color: settingsArea.containsMouse ? Colors.accent : Colors.textDim
+            }
+
+            MouseArea {
+                id: settingsArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape:  Qt.PointingHandCursor
+                onClicked:    root.settingsRequested()
+            }
+        }
+
+        Rectangle { visible: (UiConfigService.rightPanel.showSettings !== false) && (UiConfigService.rightPanel.showPower !== false); width: 1; height: 9; color: Colors.textDim; opacity: 0.5 }
 
         // Botón de apagado
         Item {
+            visible: UiConfigService.rightPanel.showPower !== false
             implicitWidth:  Metrics.iconSizeMedium + 4
             implicitHeight: Metrics.iconSizeMedium + 4
 

@@ -58,6 +58,7 @@ PanelWindow {
     color: "transparent"   // La ventana en sí es transparente; los paneles son sólidos
 
     signal launcherRequested()
+    signal settingsRequested()
 
     // ─── Atajo global Super+P para alternar el panel central desacoplado ─────
     GlobalShortcut {
@@ -130,6 +131,7 @@ PanelWindow {
                 root.mediaMenuVisible = false;
             }
         }
+        onSettingsRequested: root.settingsRequested()
     }
 
     // ─── Panel Central Desacoplado Superpuesto (centro) ─────────────────────

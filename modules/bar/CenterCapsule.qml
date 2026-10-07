@@ -17,6 +17,8 @@ Item {
 
     signal clicked()
 
+    visible: UiConfigService.centerCapsule.visible !== false
+
     implicitHeight: ch
 
     // 1. Trapecio central principal (Fondo)
@@ -32,9 +34,9 @@ Item {
         layer.samples: 4
 
         ShapePath {
-            fillColor: Colors.surface
-            strokeColor: "transparent"
-            strokeWidth: 0
+            fillColor: Qt.rgba(Colors.surface.r, Colors.surface.g, Colors.surface.b, UiConfigService.centerCapsule.bgOpacity !== undefined ? UiConfigService.centerCapsule.bgOpacity : 1.0)
+            strokeColor: Colors.surfaceBorder
+            strokeWidth: UiConfigService.centerCapsule.borderWidth !== undefined ? UiConfigService.centerCapsule.borderWidth : 1
             startX: bgShape.startX_pos; startY: 0
             PathLine { x: bgShape.endX_pos; y: 0 }
             PathLine { x: bgShape.endX_pos - root.sk; y: root.ch }
@@ -49,7 +51,7 @@ Item {
         width: bgShape.trapWidth
         height: root.ch
         anchors.horizontalCenter: parent.horizontalCenter
-        visible: true
+        visible: UiConfigService.centerCapsule.showNeon !== false
         
         // 2.1 Color base (Flujo de colores optimizado con caché)
         Item {
@@ -94,7 +96,7 @@ Item {
             Item {
                 id: albumGradientSource
                 anchors.fill: parent
-                visible: MediaService.hasMedia && MediaService.artUrl !== ""
+                visible: (UiConfigService.centerCapsule.showMedia !== false) && MediaService.hasMedia && MediaService.artUrl !== ""
                 
                 Row {
                     height: parent.height
@@ -160,6 +162,7 @@ Item {
 
         // CPU
         RowLayout {
+            visible: UiConfigService.centerCapsule.showCpu !== false
             spacing: 5
             Icon { size: Metrics.iconSizeSmall; name: "cpu"; color: SystemService.cpuUsage > 80 ? Colors.stateError : Colors.textMuted }
             Text {
@@ -177,10 +180,14 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.4 }
+        Rectangle {
+            width: 1; height: 9; color: Colors.textDim; opacity: 0.4
+            visible: (UiConfigService.centerCapsule.showCpu !== false) && (UiConfigService.centerCapsule.showRam !== false)
+        }
 
         // RAM
         RowLayout {
+            visible: UiConfigService.centerCapsule.showRam !== false
             spacing: 5
             Icon { size: Metrics.iconSizeSmall; name: "ram"; color: SystemService.ramUsage > 85 ? Colors.stateError : Colors.textMuted }
             Text {
@@ -198,10 +205,14 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.4 }
+        Rectangle {
+            width: 1; height: 9; color: Colors.textDim; opacity: 0.4
+            visible: (UiConfigService.centerCapsule.showRam !== false) && (UiConfigService.centerCapsule.showGpu !== false)
+        }
 
         // GPU Intel
         RowLayout {
+            visible: UiConfigService.centerCapsule.showGpu !== false
             spacing: 4
             Text {
                 text: "INT " + Math.round(SystemService.gpuIntel) + "%"
@@ -212,10 +223,14 @@ Item {
             }
         }
 
-        Rectangle { width: 1; height: 9; color: Colors.textDim; opacity: 0.4 }
+        Rectangle {
+            width: 1; height: 9; color: Colors.textDim; opacity: 0.4
+            visible: UiConfigService.centerCapsule.showGpu !== false
+        }
 
         // GPU NVIDIA
         RowLayout {
+            visible: UiConfigService.centerCapsule.showGpu !== false
             spacing: 4
             Text {
                 text: "NVD " + Math.round(SystemService.gpuNvidia) + "%"

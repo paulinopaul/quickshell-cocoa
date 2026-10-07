@@ -5,6 +5,7 @@ singleton AudioService    1.0 AudioService.qml
 singleton SystemService   1.0 SystemService.qml
 singleton AppService      1.0 AppService.qml
 singleton ThemeService    1.0 ThemeService.qml
+singleton UiConfigService 1.0 UiConfigService.qml
 singleton VolumeService 1.0 VolumeService.qml
 singleton AntigravityService 1.0 AntigravityService.qml
 singleton NetworkService 1.0 NetworkService.qml

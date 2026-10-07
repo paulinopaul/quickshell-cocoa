@@ -1,6 +1,13 @@
 {
+  "mode": "auto",
+  "surface": "#172325",
+  "surfaceDark": "#0f1719",
+  "surfaceRaised": "#1f2f32",
+  "surfaceBorder": "#2c484e",
+  "surfaceHover": "#263a3f",
+  "background": "#0b1112",
   "text": "#ffffff",
-  "textMuted": "#667da9",
-  "textDim": "#515865",
-  "accent": "#7f99cc"
+  "textMuted": "#5da3b2",
+  "textDim": "#4e6367",
+  "accent": "#74c5d6"
 }
