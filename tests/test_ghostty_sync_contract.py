@@ -134,6 +134,10 @@ class TestGhosttySyncContract(unittest.TestCase):
         self.tmp = Path(self._tmp.name)
         self.ghostty_dir = self.tmp / "ghostty"
         self.themes_dir = self.ghostty_dir / "themes"
+        # Hermetic ui_config: the suite must not read the live
+        # theme/ui_config.json (user state; opacity/blur vary per machine).
+        self.ui_config = self.tmp / "ui_config.json"
+        write_json(self.ui_config, {"ghostty": {"backgroundOpacity": 0.95, "backgroundBlur": 24}})
 
     def _run(self, theme_payload: dict, *extra: str) -> subprocess.CompletedProcess:
         theme_json = self.tmp / "current_theme.json"
@@ -141,6 +145,7 @@ class TestGhosttySyncContract(unittest.TestCase):
         return run_ghostty_sync(
             "--theme-json", str(theme_json),
             "--config-dir", str(self.ghostty_dir),
+            "--ui-config", str(self.ui_config),
             *extra,
         )
 

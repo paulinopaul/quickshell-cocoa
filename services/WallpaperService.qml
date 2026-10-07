@@ -7,7 +7,8 @@ import Quickshell.Io
 //
 // Integra:
 // - scripts/wallpaper_lister.py ejecutado mediante Quickshell Process (cero bloqueo del hilo UI).
-// - FileView observando /tmp/cocoa_wallpapers.json con watchChanges.
+// - FileView observando <ipc-dir>/cocoa_wallpapers.json con watchChanges
+//   (<ipc-dir>: $XDG_RUNTIME_DIR o /tmp/cocoa-$UID, fail-soft a /tmp legacy).
 // - FileView observando theme/current_wallpaper.txt para sincronizar el fondo activo.
 // - Process lanzando scripts/set_wallpaper.sh de forma asíncrona.
 
@@ -22,7 +23,20 @@ QtObject {
     readonly property string _currentWallpaperFile: Qt.resolvedUrl("../theme/current_wallpaper.txt").toString().replace("file://", "")
     readonly property string _scriptPath: Qt.resolvedUrl("../scripts/wallpaper_lister.py").toString().replace("file://", "")
     readonly property string _setWallpaperScript: Qt.resolvedUrl("../scripts/set_wallpaper.sh").toString().replace("file://", "")
-    readonly property string _jsonCachePath: "/tmp/cocoa_wallpapers.json"
+    readonly property string _jsonCacheName: "cocoa_wallpapers.json"
+    // Per-user IPC directory (scripts/wallpaper_lister.py via cocoa_ipc.py
+    // resolves the same; fail-soft default is legacy /tmp).
+    property string _ipcDir: "/tmp"
+    property Process _ipcDetect: Process {
+        running: true
+        command: ["sh", "-c", "if [ -n \"$XDG_RUNTIME_DIR\" ] && mkdir -p \"$XDG_RUNTIME_DIR\" 2>/dev/null && [ -w \"$XDG_RUNTIME_DIR\" ]; then printf '%s' \"$XDG_RUNTIME_DIR\"; else d=\"/tmp/cocoa-$(id -u 2>/dev/null || echo 0)\"; if mkdir -p \"$d\" 2>/dev/null && [ -w \"$d\" ]; then printf '%s' \"$d\"; else printf /tmp; fi; fi"]
+        onExited: {
+            let raw = stdout ? stdout.join("") : "";
+            let dir = raw.trim();
+            if (dir !== "") root._ipcDir = dir;
+        }
+    }
+    readonly property string _jsonCachePath: root._ipcDir + "/" + root._jsonCacheName
 
     // Observa el archivo de wallpaper actual
     property var currentWallpaperView: FileView {

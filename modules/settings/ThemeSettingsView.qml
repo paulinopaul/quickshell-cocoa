@@ -33,6 +33,12 @@ Item {
         if (mappings[path]) {
             return mappings[path].themeName || "Personalizado";
         }
+        // Tracked mapping keys are portable (`~`-relative, no hardcoded user);
+        // fall back to the portable form of the absolute runtime path.
+        let portable = path.replace(/^\/home\/[^\/]+/, "~");
+        if (mappings[portable]) {
+            return mappings[portable].themeName || "Personalizado";
+        }
         return "";
     }
 

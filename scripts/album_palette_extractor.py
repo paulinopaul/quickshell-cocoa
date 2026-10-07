@@ -15,8 +15,13 @@ from io import BytesIO
 from typing import List, Optional
 from PIL import Image
 
+try:
+    from scripts.cocoa_ipc import ipc_path
+except ImportError:  # standalone execution (scripts/ is sys.path[0])
+    from cocoa_ipc import ipc_path
+
 DEFAULT_PALETTE: List[str] = ["#1db954", "#1ed760", "#0f381e"]
-DEFAULT_CACHE_DIR = "/tmp/cocoa_palette_cache"
+DEFAULT_CACHE_DIR = ipc_path("cocoa_palette_cache")
 
 
 def _to_hex(r: int, g: int, b: int) -> str:

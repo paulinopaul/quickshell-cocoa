@@ -75,7 +75,7 @@ Hito 10: Notificaciones Opacas, Degradado Sutil Dinámico y Glifos ASCII para Ag
 ## Auditoría de Cierre - 2026-09-27 15:35:00
 Hito 11: Paleta Dinámica de Álbum y Formateo Especial para Spotify en Notificaciones.
 - Extracción Asíncrona de Carátulas: desarrollo de 'scripts/album_palette_extractor.py' utilizando 'PIL.Image.quantize(colors=3)' con K-Means/Median-Cut en subproceso asíncrono 'Process' y 'SplitParser', garantizando cero congelamiento del hilo UI de Quickshell.
-- Persistencia en Caché de Disco: almacenamiento en '/tmp/cocoa_palette_cache/<md5>.json', reduciendo el tiempo de recuperación de paleta a < 1ms para pistas repetidas.
+- Persistencia en Caché de Disco: almacenamiento en '<ipc-dir>/cocoa_palette_cache/<md5>.json' (directorio IPC por usuario), reduciendo el tiempo de recuperación de paleta a < 1ms para pistas repetidas.
 - Degradado Tri-Color en Tarjeta PopUp: extensión del gradiente horizontal en 'NotificationPopup.qml' para soportar 3 paradas de color dinámicas ('palette[0]' al 40%, 'palette[1]' al 22%, 'palette[2]' al 10%) disipadas suavemente sobre la superficie sólida 'Colors.surface'.
 - Formato Estricto '{álbum} - {artista}': supresión de prefijo de aplicación y timestamp en eventos de Spotify, mostrando exclusivamente el nombre del álbum y el artista (con fallback defensivo a título/artista si el álbum no está declarado).
 - Sincronización Reactiva con MPRIS: vinculación bidireccional entre 'NotificationService.qml' y 'MediaService.qml' ('onArtUrlChanged' y 'onRawAlbumChanged') para emitir el PopUp con la paleta y carátula del álbum en tiempo real al cambiar de pista en reproducción activa.

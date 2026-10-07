@@ -3,11 +3,14 @@
 scripts/wallpaper_lister.py — Scans wallpaper directory and generates sorted JSON list.
 
 Features:
-- Scans ~/Pictures/Wallpapers (with fallback to ~/Pictures/wallpapers).
+- Scans ~/.config/hypr/wallpapers first (wallpapers shipped with the dotfiles
+  repo; works on any machine with the standard symlink layout), with fallback
+  to ~/Pictures/Wallpapers and ~/Pictures/wallpapers.
 - Supports image formats: .jpg, .jpeg, .png, .webp, .bmp.
 - Natural sort order (e.g. w1.jpg, w2.jpg, ..., w10.jpg).
 - Outputs JSON array of objects: [{"path": "/abs/path", "name": "filename"}].
-- Writes to /tmp/cocoa_wallpapers.json and prints to stdout with --json.
+- Writes to <ipc-dir>/cocoa_wallpapers.json and prints to stdout with --json
+  (<ipc-dir> is the per-user IPC directory from cocoa_ipc.py).
 """
 
 import os
@@ -16,8 +19,13 @@ import json
 import re
 import argparse
 
+try:
+    from scripts.cocoa_ipc import ipc_path
+except ImportError:  # standalone execution (scripts/ is sys.path[0])
+    from cocoa_ipc import ipc_path
+
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
-DEFAULT_CACHE_FILE = "/tmp/cocoa_wallpapers.json"
+DEFAULT_CACHE_FILE = ipc_path("cocoa_wallpapers.json")
 
 
 def natural_sort_key(s: str):
@@ -27,6 +35,7 @@ def natural_sort_key(s: str):
 
 def get_default_wallpapers_dir() -> str:
     candidates = [
+        os.path.expanduser("~/.config/hypr/wallpapers"),
         os.path.expanduser("~/Pictures/Wallpapers"),
         os.path.expanduser("~/Pictures/wallpapers"),
     ]

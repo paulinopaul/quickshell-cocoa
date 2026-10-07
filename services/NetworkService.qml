@@ -18,12 +18,29 @@ QtObject {
     property string connectionError: ""
     property string connectionSuccess: ""
 
-    property var statusFile: FileView { path: "/tmp/cocoa_status.txt" }
-    property var wifiListFile: FileView { path: "/tmp/cocoa_wifi_list.json" }
-    property var wifiStatusFile: FileView { path: "/tmp/cocoa_wifi_status.json" }
+    // Per-user IPC directory: prefers $XDG_RUNTIME_DIR, else /tmp/cocoa-$UID,
+    // fail-soft to legacy /tmp. One-shot probe at startup; bash/python writers
+    // (scripts/cocoa_ipc.sh, scripts/cocoa_ipc.py) resolve the same directory.
+    property string _ipcDir: "/tmp"
+    property Process _ipcDetect: Process {
+        running: true
+        command: ["sh", "-c", "if [ -n \"$XDG_RUNTIME_DIR\" ] && mkdir -p \"$XDG_RUNTIME_DIR\" 2>/dev/null && [ -w \"$XDG_RUNTIME_DIR\" ]; then printf '%s' \"$XDG_RUNTIME_DIR\"; else d=\"/tmp/cocoa-$(id -u 2>/dev/null || echo 0)\"; if mkdir -p \"$d\" 2>/dev/null && [ -w \"$d\" ]; then printf '%s' \"$d\"; else printf /tmp; fi; fi"]
+        onExited: {
+            let raw = stdout ? stdout.join("") : "";
+            let dir = raw.trim();
+            if (dir !== "") root._ipcDir = dir;
+        }
+    }
+
+    property var statusFile: FileView { path: root._ipcDir + "/cocoa_status.txt" }
+    property var wifiListFile: FileView { path: root._ipcDir + "/cocoa_wifi_list.json" }
+    property var wifiStatusFile: FileView { path: root._ipcDir + "/cocoa_wifi_status.json" }
+
+    // Portable script path: resolved relative to this file, no hardcoded home.
+    readonly property string _wifiScript: Qt.resolvedUrl("../scripts/wifi_manager.py").toString().replace("file://", "")
 
     property Process scanProc: Process {
-        command: ["python3", "/home/paul/.config/quickshell/cocoa/scripts/wifi_manager.py", "scan"]
+        command: ["python3", root._wifiScript, "scan"]
         running: false
         onExited: (exitCode) => {
             root.isScanning = false;
@@ -91,7 +108,7 @@ QtObject {
         connectionError = "";
 
         connectionSuccess = "";
-        let args = ["python3", "/home/paul/.config/quickshell/cocoa/scripts/wifi_manager.py", "connect", targetSsid];
+        let args = ["python3", root._wifiScript, "connect", targetSsid];
         if (password && password.trim() !== "") {
             args.push(password.trim());
         }
@@ -104,7 +121,7 @@ QtObject {
         isDisconnecting = true;
         connectionError = "";
         connectionSuccess = "";
-        let args = ["python3", "/home/paul/.config/quickshell/cocoa/scripts/wifi_manager.py", "disconnect"];
+        let args = ["python3", root._wifiScript, "disconnect"];
         if (targetSsid && targetSsid.trim() !== "") {
             args.push(targetSsid.trim());
         }

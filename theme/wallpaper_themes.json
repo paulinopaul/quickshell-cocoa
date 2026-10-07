@@ -1,6 +1,6 @@
 {
   "mappings": {
-    "/home/paul/Pictures/Wallpapers/w7.jpg": {
+    "~/.config/hypr/wallpapers/w7.jpg": {
       "themeName": "Rose Pine",
       "name": "Rose Pine",
       "accent": "#eb6f92",
@@ -9,7 +9,7 @@
       "textDim": "#6e6a86",
       "description": "Soft pine rose and lilac undertones"
     },
-    "/home/paul/Pictures/Wallpapers/w4.jpg": {
+    "~/.config/hypr/wallpapers/w4.jpg": {
       "themeName": "Emerald Forest",
       "name": "Emerald Forest",
       "accent": "#10b981",
@@ -24,7 +24,7 @@
       "textDim": "#374151",
       "description": "Lush vibrant botanical green"
     },
-    "/home/paul/Pictures/Wallpapers/w5.jpg": {
+    "~/.config/hypr/wallpapers/w5.jpg": {
       "themeName": "Emerald Forest",
       "name": "Emerald Forest",
       "accent": "#10b981",

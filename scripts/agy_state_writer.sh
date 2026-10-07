@@ -2,7 +2,9 @@
 # agy_state_writer.sh — Productor de estado canónico de Antigravity para Cocoa Shell.
 #
 # Recibe un JSON de evento del hook de Antigravity por stdin y escribe
-# /tmp/agy_state.json con el esquema canónico.
+# <ipc-dir>/agy_state.json con el esquema canónico (<ipc-dir> is the
+# per-user IPC directory from cocoa_ipc.sh: $XDG_RUNTIME_DIR or
+# /tmp/cocoa-<uid>, fail-soft to legacy /tmp).
 #
 # Esquema de salida:
 #   { "state": "idle|thinking|working|awaiting_approval",
@@ -17,8 +19,12 @@
 
 set -euo pipefail
 
-STATE_FILE="/tmp/agy_state.json"
-TMP_FILE="/tmp/agy_state.tmp.$$"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/cocoa_ipc.sh"
+IPC_DIR="$(cocoa_ipc_dir)"
+STATE_FILE="$IPC_DIR/agy_state.json"
+TMP_FILE="$IPC_DIR/agy_state.tmp.$$"
 
 # ── Assertion de dependencias ───────────────────────────────────────────
 if ! command -v jq &>/dev/null; then

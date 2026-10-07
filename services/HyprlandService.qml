@@ -119,7 +119,7 @@ QtObject {
         interval: 800
         repeat:   false
         onTriggered: {
-            // Leer /proc/<pid>/cwd via readlink desde shell, escribir resultado a /tmp/cocoa_cwd.txt
+            // Leer /proc/<pid>/cwd via readlink desde shell (stdout directo, sin archivo temporal)
             cwdProc.running = true;
         }
     }

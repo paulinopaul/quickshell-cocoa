@@ -59,9 +59,21 @@ QtObject {
         path: "/sys/class/drm/card1/gt_act_freq_mhz"
     }
 
-    // Cocoa daemon status reader (NVIDIA & Serial port)
+    // Cocoa daemon status reader (NVIDIA & Serial port, per-user IPC dir).
+    // Prefers $XDG_RUNTIME_DIR, else /tmp/cocoa-$UID, fail-soft to legacy
+    // /tmp; scripts/cocoa_daemon.sh (via scripts/cocoa_ipc.sh) agrees.
+    property string _ipcDir: "/tmp"
+    property Process _ipcDetect: Process {
+        running: true
+        command: ["sh", "-c", "if [ -n \"$XDG_RUNTIME_DIR\" ] && mkdir -p \"$XDG_RUNTIME_DIR\" 2>/dev/null && [ -w \"$XDG_RUNTIME_DIR\" ]; then printf '%s' \"$XDG_RUNTIME_DIR\"; else d=\"/tmp/cocoa-$(id -u 2>/dev/null || echo 0)\"; if mkdir -p \"$d\" 2>/dev/null && [ -w \"$d\" ]; then printf '%s' \"$d\"; else printf /tmp; fi; fi"]
+        onExited: {
+            let raw = stdout ? stdout.join("") : "";
+            let dir = raw.trim();
+            if (dir !== "") root._ipcDir = dir;
+        }
+    }
     property var _statusFile: FileView {
-        path: "/tmp/cocoa_status.txt"
+        path: root._ipcDir + "/cocoa_status.txt"
     }
 
     function _formatSpeed(bps) {

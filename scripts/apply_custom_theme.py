@@ -100,36 +100,37 @@ def save_theme_json(theme: Dict[str, str], target_file: Optional[Path] = None) -
 
 
 def sync_hyprland_border(accent_hex: str) -> None:
-    """Updates Hyprland border via IPC and persists theme.conf."""
-    raw_hex = accent_hex.lstrip("#")
-    rgba_border = f"rgba({raw_hex}ee)"
-    rgba_inactive = "rgba(1a1a1aee)"
+    """Updates Hyprland border via IPC and persists theme.conf.
 
-    # Write persistent theme.conf
+    Delegates to the canonical writer (scripts/hypr_theme_conf.py: single
+    schema, single header). The full palette is derived so the shared
+    $wallpaper_muted/$wallpaper_dim variables stay populated.
+    """
     try:
-        HYPR_THEME_CONF.parent.mkdir(parents=True, exist_ok=True)
-        content = (
-            "# theme.conf — Generado dinámicamente por Cocoa Theme Manager\n"
-            "general {\n"
-            f"    col.active_border = {rgba_border}\n"
-            f"    col.inactive_border = {rgba_inactive}\n"
-            "}\n"
-        )
-        with open(HYPR_THEME_CONF, "w", encoding="utf-8") as f:
-            f.write(content)
+        theme = derive_palette_from_accent(accent_hex)
+    except Exception as e:
+        print(f"Advertencia al escribir theme.conf: {e}", file=sys.stderr)
+        return
+
+    try:
+        try:
+            from scripts.hypr_theme_conf import write_theme_conf, sync_live_border
+        except ImportError:  # standalone execution (scripts/ is sys.path[0])
+            from hypr_theme_conf import write_theme_conf, sync_live_border
+    except ImportError as e:
+        print(f"Advertencia al escribir theme.conf: {e}", file=sys.stderr)
+        return
+
+    try:
+        write_theme_conf(theme["accent"], theme["textMuted"], theme["textDim"])
     except Exception as e:
         print(f"Advertencia al escribir theme.conf: {e}", file=sys.stderr)
 
-    # Live hyprctl update
-    if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or Path("/tmp/hypr").exists():
-        try:
-            subprocess.run(
-                ["hyprctl", "keyword", "general:col.active_border", rgba_border],
-                capture_output=True,
-                timeout=2,
-            )
-        except Exception:
-            pass
+    # Live hyprctl update (fail-soft inside the canonical helper).
+    try:
+        sync_live_border(theme["accent"])
+    except Exception:
+        pass
 
 
 def _run_ghostty_sync() -> None:

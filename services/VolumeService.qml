@@ -13,7 +13,21 @@ QtObject {
     signal volumeChangedExplicitly()
     signal micToggled()
 
-    property var statusFile: FileView { path: "/tmp/cocoa_status.txt" }
+    property var statusFile: FileView { path: root._ipcDir + "/cocoa_status.txt" }
+
+    // Per-user IPC directory: prefers $XDG_RUNTIME_DIR, else /tmp/cocoa-$UID,
+    // fail-soft to legacy /tmp. One-shot probe at startup; the bash writer
+    // (scripts/cocoa_daemon.sh via scripts/cocoa_ipc.sh) resolves the same.
+    property string _ipcDir: "/tmp"
+    property Process _ipcDetect: Process {
+        running: true
+        command: ["sh", "-c", "if [ -n \"$XDG_RUNTIME_DIR\" ] && mkdir -p \"$XDG_RUNTIME_DIR\" 2>/dev/null && [ -w \"$XDG_RUNTIME_DIR\" ]; then printf '%s' \"$XDG_RUNTIME_DIR\"; else d=\"/tmp/cocoa-$(id -u 2>/dev/null || echo 0)\"; if mkdir -p \"$d\" 2>/dev/null && [ -w \"$d\" ]; then printf '%s' \"$d\"; else printf /tmp; fi; fi"]
+        onExited: {
+            let raw = stdout ? stdout.join("") : "";
+            let dir = raw.trim();
+            if (dir !== "") root._ipcDir = dir;
+        }
+    }
 
     // Sondeo de alta frecuencia a buffer en memoria RAM (/tmp)
     property Timer pollTimer: Timer {

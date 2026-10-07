@@ -2,4 +2,4 @@ __pycache__/
 *.pyc
 *.bak
 .planning/
-/tmp/cocoa_palette_cache/
+# Runtime palette cache lives outside the repo (<ipc-dir>/cocoa_palette_cache/).

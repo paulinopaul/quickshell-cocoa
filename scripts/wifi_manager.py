@@ -10,8 +10,13 @@ import subprocess
 import sys
 from typing import Dict, List, Optional
 
-WIFI_LIST_FILE = "/tmp/cocoa_wifi_list.json"
-WIFI_STATUS_FILE = "/tmp/cocoa_wifi_status.json"
+try:
+    from scripts.cocoa_ipc import ipc_path
+except ImportError:  # standalone execution (scripts/ is sys.path[0])
+    from cocoa_ipc import ipc_path
+
+WIFI_LIST_FILE = ipc_path("cocoa_wifi_list.json")
+WIFI_STATUS_FILE = ipc_path("cocoa_wifi_status.json")
 
 
 def parse_nmcli_wifi_list(output: str) -> List[Dict[str, object]]:

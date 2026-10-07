@@ -22,6 +22,42 @@ CURRENT_WALLPAPER_FILE = COCOA_DIR / "theme/current_wallpaper.txt"
 HYPR_THEME_CONF = Path.home() / ".config/hypr/theme.conf"
 EXTRACTOR_SCRIPT = COCOA_DIR / "scripts/extract_colors.py"
 
+
+def _normalize_wall_key(path: str) -> str:
+    """Portable wallpaper key: expand ~/$HOME, then absolute-resolve.
+
+    Tracked mapping keys use `~`-relative form (no hardcoded username);
+    runtime paths are absolute. Normalizing both sides lets a shipped mapping
+    match on any machine with the standard symlink layout.
+    """
+    expanded = os.path.expandvars(os.path.expanduser((path or "").strip()))
+    if not expanded:
+        return ""
+    return str(Path(expanded).resolve())
+
+
+def _portable_wall_key(abs_path: str) -> str:
+    """Inverse of _normalize_wall_key: collapse $HOME to ~ so newly written
+    mapping keys stay portable (no username leaks into the tracked file)."""
+    home = str(Path.home())
+    if abs_path == home or abs_path.startswith(home + os.sep):
+        return "~" + abs_path[len(home):]
+    return abs_path
+
+
+def _lookup_mapping(mappings: Dict[str, Any], wallpaper_path: str) -> Optional[Dict[str, Any]]:
+    """Finds a bound theme by exact key, falling back to normalized compare."""
+    resolved = _normalize_wall_key(wallpaper_path)
+    if not resolved:
+        return None
+    if resolved in mappings:
+        theme = mappings[resolved]
+        return theme if isinstance(theme, dict) else None
+    for key, theme in mappings.items():
+        if isinstance(theme, dict) and _normalize_wall_key(key) == resolved:
+            return theme
+    return None
+
 NAMED_PRESETS: Dict[str, Dict[str, str]] = {
     "NeoNord": {
         "name": "NeoNord",
@@ -202,35 +238,29 @@ def write_theme_json(theme: Dict[str, str]) -> None:
     os.replace(tmp, THEME_JSON)
 
 
-def sync_hyprland(accent_hex: str) -> None:
-    raw = accent_hex.lstrip("#")
-    rgba = f"rgba({raw}ee)"
-    rgba_dim = "rgba(1a1a1aee)"
+def sync_hyprland(accent_hex: str, muted_hex: Optional[str] = None, dim_hex: Optional[str] = None) -> None:
+    """Synchronizes Hyprland borders via the canonical theme.conf writer.
+
+    Delegates to scripts/hypr_theme_conf.py (single schema, single header);
+    this function keeps its signature so existing callers are unaffected.
+    """
+    try:
+        try:
+            from scripts.hypr_theme_conf import write_theme_conf, sync_live_border
+        except ImportError:  # standalone execution (scripts/ is sys.path[0])
+            from hypr_theme_conf import write_theme_conf, sync_live_border
+    except ImportError:
+        return
 
     try:
-        HYPR_THEME_CONF.parent.mkdir(parents=True, exist_ok=True)
-        content = (
-            "# theme.conf — Auto-generado por Cocoa Theme Manager\n"
-            "general {\n"
-            f"    col.active_border = {rgba}\n"
-            f"    col.inactive_border = {rgba_dim}\n"
-            "}\n"
-        )
-        with open(HYPR_THEME_CONF, "w", encoding="utf-8") as f:
-            f.write(content)
+        write_theme_conf(accent_hex, muted_hex, dim_hex)
     except Exception:
         pass
 
-    if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or Path("/tmp/hypr").exists():
-        try:
-            import subprocess
-            subprocess.run(
-                ["hyprctl", "keyword", "general:col.active_border", rgba],
-                capture_output=True,
-                timeout=2,
-            )
-        except Exception:
-            pass
+    try:
+        sync_live_border(accent_hex)
+    except Exception:
+        pass
 
 
 def apply_theme_by_name(theme_name: str) -> Dict[str, str]:
@@ -251,7 +281,10 @@ def apply_theme_by_name(theme_name: str) -> Dict[str, str]:
 
 def bind_wallpaper(wallpaper_path: str, theme_name_or_palette: Any) -> Dict[str, Any]:
     """Binds a specific wallpaper to a named theme or custom palette."""
-    resolved_wall = str(Path(wallpaper_path).resolve())
+    resolved_wall = _normalize_wall_key(wallpaper_path)
+    if not resolved_wall:
+        raise ValueError(f"Ruta de wallpaper inválida: '{wallpaper_path}'")
+    stored_key = _portable_wall_key(resolved_wall)
     db = load_database()
 
     if isinstance(theme_name_or_palette, str):
@@ -270,31 +303,34 @@ def bind_wallpaper(wallpaper_path: str, theme_name_or_palette: Any) -> Dict[str,
     else:
         raise ValueError("Formato de tema inválido")
 
-    db["mappings"][resolved_wall] = payload
+    db["mappings"][stored_key] = payload
     save_database(db)
 
     # If this is the current active wallpaper, apply it immediately
     curr_wall = get_current_wallpaper()
-    if curr_wall and str(Path(curr_wall).resolve()) == resolved_wall:
+    if curr_wall and _normalize_wall_key(curr_wall) == resolved_wall:
         apply_for_wallpaper(resolved_wall)
 
     return payload
 
 
 def unbind_wallpaper(wallpaper_path: str) -> bool:
-    resolved_wall = str(Path(wallpaper_path).resolve())
+    resolved_wall = _normalize_wall_key(wallpaper_path)
     db = load_database()
-    if resolved_wall in db.get("mappings", {}):
-        del db["mappings"][resolved_wall]
-        save_database(db)
-        return True
+    mappings = db.get("mappings", {})
+    for key in list(mappings.keys()):
+        if key == resolved_wall or _normalize_wall_key(key) == resolved_wall:
+            del mappings[key]
+            save_database(db)
+            return True
     return False
 
 
 def get_current_wallpaper() -> str:
     if CURRENT_WALLPAPER_FILE.exists():
         try:
-            return CURRENT_WALLPAPER_FILE.read_text(encoding="utf-8").strip()
+            # Expand ~ so portable tracked defaults resolve on any machine.
+            return os.path.expanduser(CURRENT_WALLPAPER_FILE.read_text(encoding="utf-8").strip())
         except Exception:
             pass
     return ""
@@ -303,7 +339,9 @@ def get_current_wallpaper() -> str:
 def create_theme_from_wallpaper(wallpaper_path: str, custom_name: Optional[str] = None) -> Dict[str, str]:
     """Extracts palette using extract_colors.py and registers it as a reusable theme."""
     import subprocess
-    resolved = str(Path(wallpaper_path).resolve())
+    resolved = _normalize_wall_key(wallpaper_path)
+    if not resolved:
+        raise ValueError(f"Ruta de wallpaper inválida: '{wallpaper_path}'")
     if not Path(resolved).exists():
         raise FileNotFoundError(f"Wallpaper no encontrado: {resolved}")
 
@@ -323,8 +361,8 @@ def create_theme_from_wallpaper(wallpaper_path: str, custom_name: Optional[str] 
 
     db = load_database()
     db["customThemes"][name] = theme
-    # Also bind to this wallpaper
-    db["mappings"][resolved] = {"themeName": name, **theme}
+    # Also bind to this wallpaper (portable key: no hardcoded username)
+    db["mappings"][_portable_wall_key(resolved)] = {"themeName": name, **theme}
     save_database(db)
 
     # Apply immediately
@@ -340,12 +378,12 @@ def apply_for_wallpaper(wallpaper_path: str) -> Dict[str, str]:
     2. If bound, applies the bound theme!
     3. If not, extracts colors dynamically from the wallpaper.
     """
-    resolved = str(Path(wallpaper_path).resolve())
+    resolved = _normalize_wall_key(wallpaper_path)
     db = load_database()
     mappings = db.get("mappings", {})
 
-    if resolved in mappings:
-        theme = mappings[resolved]
+    theme = _lookup_mapping(mappings, resolved)
+    if theme is not None:
         clean_theme = {
             "mode": theme.get("themeName", "mapped"),
             "text": theme.get("text", "#ffffff"),

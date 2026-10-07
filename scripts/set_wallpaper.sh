@@ -33,6 +33,11 @@ if [[ ! -f "$WALL" ]]; then
     exit 2
 fi
 
+# Canonicalize to an absolute path so hyprpaper.conf, current_wallpaper.txt and
+# theme bindings stay valid on any machine/username regardless of how the
+# caller spelled the path (relative, ~-prefixed, or symlinked).
+WALL="$(realpath "$WALL")"
+
 # ── Obtener lista de monitores desde hyprctl ──────────────────────────────────
 MONITORS=()
 if command -v hyprctl &>/dev/null; then

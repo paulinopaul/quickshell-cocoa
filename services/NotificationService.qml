@@ -44,11 +44,14 @@ Item {
         }
     }
 
+    // Portable script path: resolved relative to this file, no hardcoded home.
+    readonly property string _paletteScript: Qt.resolvedUrl("../scripts/album_palette_extractor.py").toString().replace("file://", "")
+
     // Extractor asíncrono de paleta sin bloqueo del hilo UI
     property Process paletteProc: Process {
         id: paletteProc
         property string targetSource: ""
-        command: targetSource !== "" ? ["python3", "/home/paul/.config/quickshell/cocoa/scripts/album_palette_extractor.py", targetSource] : ["true"]
+        command: targetSource !== "" ? ["python3", root._paletteScript, targetSource] : ["true"]
         running: false
 
         stdout: SplitParser {

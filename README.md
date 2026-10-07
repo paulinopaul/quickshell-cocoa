@@ -7,7 +7,7 @@
 [![Compositor: Hyprland](https://img.shields.io/badge/Compositor-Hyprland_%3E%3D_0.40.0-00ADD8?style=flat-square&logo=hyprland&logoColor=white)](https://hyprland.org)
 [![Framework: Quickshell](https://img.shields.io/badge/Framework-Quickshell_%3E%3D_0.3.1-41CD52?style=flat-square&logo=qt&logoColor=white)](https://quickshell.outfoxxed.me)
 [![Wayland Layer: zwlr_layer_shell_v1](https://img.shields.io/badge/Wayland-Layer_Shell_v1-E95420?style=flat-square&logo=wayland&logoColor=white)](https://wayland.freedesktop.org)
-[![Tests: 148 Passing](https://img.shields.io/badge/Tests-148_Passing-brightgreen?style=flat-square&logo=python&logoColor=white)](tests/)
+[![Tests: 206 Passing](https://img.shields.io/badge/Tests-206_Passing-brightgreen?style=flat-square&logo=python&logoColor=white)](tests/)
 [![Architecture: Clean & Modular](https://img.shields.io/badge/Architecture-SOLID_%2F_Reactive-blueviolet?style=flat-square)](#architecture)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
@@ -71,7 +71,7 @@
   * **Generic Terminal**: `>_` (`#22c55e`)
 * **Spotify Dynamic 3-Color Palette Extraction**:
   * Asynchronously downloads and quantizes active album art (`mpris:artUrl`) via K-Means (`PIL.Image.quantize(colors=3)`), rendering a 3-stop dynamic horizontal gradient in zero render-thread blocking time.
-  * Local filesystem caching (`/tmp/cocoa_palette_cache/<md5>.json`) delivers sub-millisecond lookups for repeated tracks.
+  * Local filesystem caching (per-user IPC dir `<ipc-dir>/cocoa_palette_cache/<md5>.json`) delivers sub-millisecond lookups for repeated tracks.
 * **Reactive Suppression**: Automatically suppresses and auto-dismisses popups when the center capsule flyout is detached.
 
 ### 4. Zero-Overhead Performance & Kernel Direct Reads
@@ -164,7 +164,7 @@ Ensure the following packages are installed on your system:
 Cocoa shells out to these tools at runtime. Install them in one go:
 
 ```bash
-sudo pacman -S quickshell hyprland hyprpaper hyprlock ghostty grim slurp wl-clipboard flameshot brightnessctl wireplumber pipewire networkmanager upower python python-pillow xdg-utils
+sudo pacman -S quickshell hyprland hyprpaper hyprlock ghostty grim slurp wl-clipboard flameshot brightnessctl wireplumber pipewire networkmanager upower python python-pillow xdg-utils jq playerctl papirus-icon-theme dolphin
 ```
 
 | Tool | Arch package | Invoked by |
@@ -180,6 +180,10 @@ sudo pacman -S quickshell hyprland hyprpaper hyprlock ghostty grim slurp wl-clip
 | `wpctl` | `wireplumber` (+ `pipewire`) | Volume/mute keys, audio settings (`services/VolumeService.qml`, `scripts/audio_manager.py`, `scripts/cocoa_daemon.sh`) |
 | `nmcli` | `networkmanager` | Wi-Fi scan/connect and telemetry (`scripts/wifi_manager.py`, `scripts/cocoa_daemon.sh`) |
 | `python3` + Pillow | `python`, `python-pillow` | Palette extraction and all `scripts/*.py` managers |
+| `jq` | `jq` | JSON queries over `hyprctl -j` output in shell scripts |
+| `playerctl` | `playerctl` | Media metadata fallback for the center capsule |
+| Papirus icons | `papirus-icon-theme` | Terminal/app icon paths (`services/HyprlandService.qml`) |
+| `dolphin` | `dolphin` | Default file manager (`SUPER + E` in `hyprland.conf`) |
 | `xdg-mime` | `xdg-utils` | Default apps center (`scripts/default_apps_manager.py`) |
 
 ---
@@ -199,15 +203,31 @@ git clone https://github.com/paulinopaul/quickshell-cocoa.git ~/.config/quickshe
 Add the following lines to your `~/.config/hypr/hyprland.conf`:
 
 ```ini
-# Auto-start Cocoa Desktop Shell
-exec-once = quickshell -d -p ~/.config/quickshell/cocoa
+# Auto-start Cocoa Desktop Shell (via the Hyprland boot helper, which also
+# ensures hyprpaper is running with a valid hyprpaper.conf)
+exec-once = ~/.config/hypr/scripts/start_shell.sh
+```
 
+`start_shell.sh` launches the shell detached as
+`setsid -f quickshell -p ~/.config/quickshell/cocoa` (plus `hyprpaper -c
+~/.config/hypr/hyprpaper.conf`), and `hyprland.conf` also carries the fast
+telemetry daemon:
+
+```ini
 # Optional background daemon for fast polling and telemetry
 exec-once = ~/.config/quickshell/cocoa/scripts/cocoa_daemon.sh
-
-# Global shortcut to toggle the application launcher
-bind = SUPER, R, global, quickshell:launcher
 ```
+
+### 2b. Global shortcuts
+
+These four Cocoa shortcuts live in `hyprland.conf` (global dispatch):
+
+| Shortcut | Action |
+| :--- | :--- |
+| `SUPER + R` | Application launcher (`quickshell:launcher`) |
+| `SUPER + Space` | Wallpaper selector (`quickshell:wallpaper_selector`) |
+| `SUPER + P` | Detachable center panel (`quickshell:center_panel`) |
+| `SUPER + I` | Settings dialog (`quickshell:settings_dialog`) |
 
 ### 3. Running Manually
 
@@ -226,7 +246,7 @@ Already have Cocoa installed? Three steps:
 ```bash
 cd ~/.config/quickshell/cocoa && git pull
 quickshell kill
-quickshell -p ~/.config/quickshell/cocoa -d
+setsid -f quickshell -p ~/.config/quickshell/cocoa
 ```
 
 (Alternatively, restart via `~/.config/hypr/scripts/start_shell.sh`, which also ensures `hyprpaper` is running.)
@@ -263,7 +283,7 @@ quickshell -p ~/.config/quickshell/cocoa -d
 Cocoa features a comprehensive test suite covering contracts, classifiers, and data parsers:
 
 ```bash
-# Run all unit and contract tests (137 tests)
+# Run all unit and contract tests (206 tests)
 python3 -m unittest discover -s ~/.config/quickshell/cocoa/tests -p "test_*.py" -v
 ```
 
@@ -285,7 +305,7 @@ All tests execute in approximately ~100ms with zero GUI dependencies.
 │   └── notifications/       # Smart notification popup
 ├── scripts/                 # Palette extraction, daemons, and helper utilities
 ├── services/                # Singletons (Audio, Brightness, Hyprland, Media, Network)
-├── tests/                   # TDD test suite (137 unit and contract tests)
+├── tests/                   # TDD test suite (206 unit and contract tests across 22 test files)
 ├── theme/                   # Theme definitions and active wallpaper colors
 └── shell.qml                # Quickshell entrypoint and window declaration
 ```

@@ -3,7 +3,7 @@
 Tests cover:
 1. Extraction of 3 predominant colors from synthetic RGB images.
 2. Hex color format validation (#rrggbb).
-3. Local disk caching mechanism in /tmp/cocoa_palette_cache/.
+3. Local disk caching mechanism in <ipc-dir>/cocoa_palette_cache/ (per-user IPC dir).
 4. Defensive fallback upon network/file errors, missing files, or timeouts.
 5. Handling of None, empty, or malformed URL inputs.
 """

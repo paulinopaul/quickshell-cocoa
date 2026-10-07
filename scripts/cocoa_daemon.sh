@@ -1,4 +1,12 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/cocoa_ipc.sh"
+IPC_DIR="$(cocoa_ipc_dir)"
+COCOA_STATUS_FILE="$IPC_DIR/cocoa_status.txt"
+COCOA_STATUS_TMP="$IPC_DIR/cocoa_status.tmp"
+AGY_STATUS_FILE="$IPC_DIR/agy_status.txt"
+AGY_STATUS_TMP="$IPC_DIR/agy_status.tmp"
 NET_COUNTER=0
 WIFI=""
 ETH=0
@@ -38,15 +46,15 @@ while true; do
         fi
     fi
     
-    echo "$SINK|$SRC|$WIFI|$ETH|$NVD|$SERIAL_DEV" > /tmp/cocoa_status.tmp
-    mv /tmp/cocoa_status.tmp /tmp/cocoa_status.txt
+    echo "$SINK|$SRC|$WIFI|$ETH|$NVD|$SERIAL_DEV" > "$COCOA_STATUS_TMP"
+    mv "$COCOA_STATUS_TMP" "$COCOA_STATUS_FILE"
     
     # Antigravity CLI status (cada 5 ciclos = ~500ms)
     if [ $((NET_COUNTER % 5)) -eq 0 ]; then
         LATEST_BRAIN=$(ls -td ~/.gemini/antigravity-cli/brain/*/ 2>/dev/null | head -1)
         if [ -n "$LATEST_BRAIN" ]; then
-            tail -n 1 "${LATEST_BRAIN}.system_generated/logs/transcript.jsonl" 2>/dev/null > /tmp/agy_status.tmp
-            mv /tmp/agy_status.tmp /tmp/agy_status.txt
+            tail -n 1 "${LATEST_BRAIN}.system_generated/logs/transcript.jsonl" 2>/dev/null > "$AGY_STATUS_TMP"
+            mv "$AGY_STATUS_TMP" "$AGY_STATUS_FILE"
         fi
     fi
     

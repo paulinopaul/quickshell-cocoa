@@ -1,1 +1,1 @@
-/home/paul/Pictures/Wallpapers/w7.jpg
+~/.config/hypr/wallpapers/w7.jpg

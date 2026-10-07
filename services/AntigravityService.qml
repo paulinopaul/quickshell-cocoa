@@ -5,7 +5,9 @@ import Quickshell.Io
 
 // AntigravityService — Consumidor del estado canónico de Antigravity.
 //
-// Lee /tmp/agy_state.json generado por agy_state_writer.sh (hook de AGY).
+// Lee <ipc-dir>/agy_state.json generado por agy_state_writer.sh (hook de AGY),
+// donde <ipc-dir> es el directorio IPC por usuario ($XDG_RUNTIME_DIR o
+// /tmp/cocoa-$UID, fail-soft a /tmp legacy).
 // Expone propiedades reactivas para CenterCapsule y CenterFlyout.
 //
 // Estados posibles:
@@ -31,9 +33,19 @@ QtObject {
     property var    history:        []
     property int    lastTs:         0
 
-    // ── Lectura del archivo de estado ─────────────────────────────────────
+    // ── Lectura del archivo de estado (directorio IPC por usuario) ─────────
+    property string _ipcDir: "/tmp"
+    property Process _ipcDetect: Process {
+        running: true
+        command: ["sh", "-c", "if [ -n \"$XDG_RUNTIME_DIR\" ] && mkdir -p \"$XDG_RUNTIME_DIR\" 2>/dev/null && [ -w \"$XDG_RUNTIME_DIR\" ]; then printf '%s' \"$XDG_RUNTIME_DIR\"; else d=\"/tmp/cocoa-$(id -u 2>/dev/null || echo 0)\"; if mkdir -p \"$d\" 2>/dev/null && [ -w \"$d\" ]; then printf '%s' \"$d\"; else printf /tmp; fi; fi"]
+        onExited: {
+            let raw = stdout ? stdout.join("") : "";
+            let dir = raw.trim();
+            if (dir !== "") root._ipcDir = dir;
+        }
+    }
     property FileView stateFile: FileView {
-        path: "/tmp/agy_state.json"
+        path: root._ipcDir + "/agy_state.json"
     }
 
     // ── Polling a 500ms ───────────────────────────────────────────────────

@@ -10,8 +10,8 @@
   },
   "ghostty": {
     "theme": "Onenord",
-    "backgroundOpacity": 0.95,
-    "backgroundBlur": 24
+    "backgroundOpacity": 0.9,
+    "backgroundBlur": 14
   },
   "panels": {
     "left": {
