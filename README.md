@@ -17,6 +17,8 @@
   <a href="#-architecture">Architecture</a> •
   <a href="#-dependencies">Dependencies</a> •
   <a href="#-quick-start">Quick Start</a> •
+  <a href="#-updating-an-existing-install">Updating</a> •
+  <a href="#-configuring-keybinds">Keybinds</a> •
   <a href="#-test-suite">Tests</a> •
   <a href="#-project-structure">Structure</a>
 </p>
@@ -157,6 +159,29 @@ Ensure the following packages are installed on your system:
 | **Hardware / Power** | `upower`, `brightnessctl` | Battery status & display backlight control |
 | **Media Extraction** | `python` (>= 3.10), `python-pillow` | Asynchronous palette quantization for MPRIS covers |
 
+### Installing runtime dependencies (Arch Linux)
+
+Cocoa shells out to these tools at runtime. Install them in one go:
+
+```bash
+sudo pacman -S quickshell hyprland hyprpaper hyprlock ghostty grim slurp wl-clipboard flameshot brightnessctl wireplumber pipewire networkmanager upower python python-pillow xdg-utils
+```
+
+| Tool | Arch package | Invoked by |
+| :--- | :--- | :--- |
+| `quickshell` | `quickshell` | The shell itself (`quickshell -p ~/.config/quickshell/cocoa`) |
+| `hyprctl` | `hyprland` | Keybinds, display, and theme/border sync (`scripts/keybinds_manager.py`, `scripts/display_manager.py`, `scripts/theme_manager.py`) |
+| `hyprpaper` | `hyprpaper` | Wallpaper backend (`scripts/set_wallpaper.sh`, `start_shell.sh`) |
+| `hyprlock` | `hyprlock` | Lock screen (media-key binds, bar power menu) |
+| `ghostty` | `ghostty` | Default `$terminal` (`hyprland.conf`, `scripts/ghostty_sync.py`) |
+| `grim` + `slurp` piped to `wl-copy` | `grim`, `slurp`, `wl-clipboard` | Screenshot binds (`SUPER SHIFT + S`, `SUPER + F6`, `Print` via flameshot below) |
+| `flameshot` | `flameshot` | `Print` key bind (`flameshot gui`) |
+| `brightnessctl` | `brightnessctl` | Brightness keys (`services/BrightnessService.qml`) |
+| `wpctl` | `wireplumber` (+ `pipewire`) | Volume/mute keys, audio settings (`services/VolumeService.qml`, `scripts/audio_manager.py`, `scripts/cocoa_daemon.sh`) |
+| `nmcli` | `networkmanager` | Wi-Fi scan/connect and telemetry (`scripts/wifi_manager.py`, `scripts/cocoa_daemon.sh`) |
+| `python3` + Pillow | `python`, `python-pillow` | Palette extraction and all `scripts/*.py` managers |
+| `xdg-mime` | `xdg-utils` | Default apps center (`scripts/default_apps_manager.py`) |
+
 ---
 
 ## 🚀 Quick Start
@@ -191,6 +216,45 @@ To run Cocoa in the foreground with verbose logging for development:
 ```bash
 quickshell -p ~/.config/quickshell/cocoa -v
 ```
+
+---
+
+## 🔄 Updating an Existing Install
+
+Already have Cocoa installed? Three steps:
+
+```bash
+cd ~/.config/quickshell/cocoa && git pull
+quickshell kill
+quickshell -p ~/.config/quickshell/cocoa -d
+```
+
+(Alternatively, restart via `~/.config/hypr/scripts/start_shell.sh`, which also ensures `hyprpaper` is running.)
+
+### What hot-reloads vs what needs a restart
+
+| Change | Effect |
+| :--- | :--- |
+| Theme JSON (`theme/current_theme.json`, `theme/ui_config.json`, `theme/wallpaper_themes.json`) | Applies live — no restart needed |
+| Any `.qml` file | Requires a shell restart (`quickshell kill` + relaunch) |
+
+---
+
+## ⌨️ Configuring Keybinds
+
+### Quick path
+
+1. Press `SUPER + I` to open Cocoa settings.
+2. Go to the "Atajos de Teclado" tab — the live binding list is parsed from `hyprctl binds -j` and supports fuzzy search by key, category, or dispatcher.
+3. Use the add/remove form to create (`mods + key + dispatcher + arg`) or delete a binding. Changes apply live via `hyprctl bind` / `hyprctl unbind` and persist to `hyprland.conf`.
+
+### Details
+
+| Topic | Behavior |
+| :--- | :--- |
+| Managed section | Cocoa writes only inside `# --- Keybindings gestionados por Cocoa ---` in `~/.config/hypr/hyprland.conf` (created after the last `bind` line if absent). |
+| Your own binds | Anything outside the managed section is never touched — unmanaged binds are preserved. |
+| File location | `~/.config/hypr/hyprland.conf`; backend is `scripts/keybinds_manager.py` (fail-soft: `hyprctl` errors surface as JSON, never crash the shell). |
 
 ---
 
